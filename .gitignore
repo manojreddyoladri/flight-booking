@@ -1,0 +1,11 @@
+# STS / Eclipse
+.settings/
+.classpath
+.project
+target/
+.idea/
+*.iml
+
+# Node (later, for your frontend)
+node_modules/
+dist/
