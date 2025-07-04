@@ -21,6 +21,10 @@ import { ReactiveFormsModule } from '@angular/forms';
       <ul class="list-group mt-3">
         <li *ngFor="let f of flightState$ | async" class="list-group-item">
           {{ f.airlineName }} (Seats: {{ f.totalSeats }})
+          <button class="btn btn-sm btn-info ms-2" (click)="checkAvailability(f.id)">Check Availability</button>
+          <span *ngIf="availabilityMap[f.id] !== undefined" class="ms-2">
+            Available: {{ availabilityMap[f.id] }}
+          </span>
         </li>
       </ul>
     </div>
@@ -29,6 +33,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 export class FlightsComponent implements OnInit {
     flightState$: Observable<Flight[]>;
     form: FormGroup;
+    availabilityMap: { [flightId: number]: number } = {};
   
     constructor(
       private flightService: FlightService,
@@ -45,5 +50,12 @@ export class FlightsComponent implements OnInit {
     onSubmit() {
       this.flightService.add(this.form.value);
       this.form.reset();
+    }
+
+    checkAvailability(flightId: number) {
+      this.flightService.checkAvailability(flightId).subscribe({
+        next: available => this.availabilityMap[flightId] = available,
+        error: () => this.availabilityMap[flightId] = -1
+      });
     }
 }
