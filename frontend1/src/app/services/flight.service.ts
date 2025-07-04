@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Flight } from '../models/flight.model';
 
 @Injectable({
@@ -30,5 +30,9 @@ export class FlightService {
         },
         error: (error) => console.error('Error adding flight:', error)
       });
+  }
+
+  checkAvailability(flightId: number): Observable<number> {
+    return this.http.get<number>(`${this.baseUrl}/${flightId}/availability`);
   }
 }
