@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.springboot.common.dto.BookingDTO;
 import com.springboot.common.dto.BookingRequestDTO;
-import com.springboot.common.model.Booking;
 import com.springboot.common.service.BookingService;
 
 @RestController
@@ -34,8 +33,8 @@ public class BookingController {
     }
     
     @GetMapping
-    public ResponseEntity<List<Booking>> getAllBookings() {
-        List<Booking> all = service.findAllBookings();
+    public ResponseEntity<List<BookingDTO>> getAllBookings() {
+        List<BookingDTO> all = service.findAllBookings();
         return ResponseEntity.ok(all);
     }
 

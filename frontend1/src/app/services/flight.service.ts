@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable, catchError, throwError } from 'rxjs';
 import { Flight } from '../models/flight.model';
 
 @Injectable({
@@ -8,51 +8,40 @@ import { Flight } from '../models/flight.model';
 })
 export class FlightService {
   private baseUrl = 'http://localhost:8080/api/flights';
-  private flightsSubject = new BehaviorSubject<Flight[]>([]);
-  public flights$ = this.flightsSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
-  loadAll(): void {
+  loadAllFlights(): Observable<Flight[]> {
     console.log('Loading all flights...');
-    this.http.get<Flight[]>(this.baseUrl)
-      .subscribe({
-        next: (flights) => {
-          console.log('Flights loaded successfully:', flights);
-          console.log('Number of flights:', flights.length);
-          flights.forEach(f => {
-            console.log(`Flight ${f.id}: ${f.airlineName} - ${f.availableSeats} available seats`);
-          });
-          this.flightsSubject.next(flights);
-        },
-        error: (error) => {
-          console.error('Error loading flights:', error);
-        }
-      });
+    return this.http.get<Flight[]>(this.baseUrl).pipe(
+      catchError(error => {
+        console.error('Error loading flights:', error);
+        return throwError(() => new Error('Failed to load flights'));
+      })
+    );
   }
 
-  add(flight: Flight): void {
+  addFlight(flight: Flight): Observable<Flight> {
     console.log('Adding flight:', flight);
-    this.http.post<Flight>(this.baseUrl, flight)
-      .subscribe({
-        next: (newFlight) => {
-          console.log('Flight added successfully:', newFlight);
-          const currentFlights = this.flightsSubject.value;
-          this.flightsSubject.next([...currentFlights, newFlight]);
-        },
-        error: (error) => {
-          console.error('Error adding flight:', error);
-        }
-      });
+    return this.http.post<Flight>(this.baseUrl, flight).pipe(
+      catchError(error => {
+        console.error('Error adding flight:', error);
+        return throwError(() => new Error('Failed to add flight'));
+      })
+    );
   }
 
   checkAvailability(flightId: number): Observable<number> {
-    return this.http.get<number>(`${this.baseUrl}/${flightId}/availability`);
+    return this.http.get<number>(`${this.baseUrl}/${flightId}/availability`).pipe(
+      catchError(error => {
+        console.error('Error checking availability:', error);
+        return throwError(() => new Error('Failed to check availability'));
+      })
+    );
   }
 
-  // Method to refresh flight data after booking operations
-  refreshFlights(): void {
+  refreshFlights(): Observable<Flight[]> {
     console.log('Refreshing flights...');
-    this.loadAll();
+    return this.loadAllFlights();
   }
 }
