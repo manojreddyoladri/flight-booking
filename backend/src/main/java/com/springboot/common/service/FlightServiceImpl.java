@@ -18,13 +18,13 @@ public class FlightServiceImpl implements FlightService {
     public FlightDTO addFlight(FlightDTO dto) {
         Flight f = new Flight(dto.getAirlineName(), dto.getTotalSeats());
         f = repo.save(f);
-        return new FlightDTO(f.getId(), f.getAirlineName(), f.getTotalSeats());
+        return new FlightDTO(f.getId(), f.getAirlineName(), f.getTotalSeats(), f.getAvailableSeats());
     }
 
     @Override
     public List<FlightDTO> listAll() {
         return repo.findAll().stream()
-            .map(f -> new FlightDTO(f.getId(), f.getAirlineName(), f.getTotalSeats()))
+            .map(f -> new FlightDTO(f.getId(), f.getAirlineName(), f.getTotalSeats(), f.getAvailableSeats()))
             .collect(Collectors.toList());
     }
 
@@ -32,6 +32,6 @@ public class FlightServiceImpl implements FlightService {
     public int checkAvailability(Long flightId) {
         Flight f = repo.findById(flightId)
             .orElseThrow(() -> new RuntimeException("Flight not found"));
-        return f.getTotalSeats(); // adjust if tracking booked seats
+        return f.getAvailableSeats();
     }
 }

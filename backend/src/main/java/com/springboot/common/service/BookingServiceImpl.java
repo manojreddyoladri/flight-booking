@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.springboot.common.dto.BookingDTO;
 import com.springboot.common.dto.BookingRequestDTO;
@@ -29,11 +30,23 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDTO createBooking(BookingRequestDTO req) {
         Flight f = flightRepo.findById(req.getFlightId())
             .orElseThrow(() -> new RuntimeException("Flight not found"));
+        
+        // Check if seats are available
+        if (f.getAvailableSeats() <= 0) {
+            throw new RuntimeException("No seats available for this flight");
+        }
+        
         Customer c = customerRepo.findById(req.getCustomerId())
             .orElseThrow(() -> new RuntimeException("Customer not found"));
+        
+        // Book a seat on the flight
+        f.bookSeat();
+        flightRepo.save(f);
+        
         Booking b = new Booking(f, c, req.getPrice());
         b = bookingRepo.save(b);
         return new BookingDTO(b.getId(), f.getId(), c.getId(), b.getPrice(), b.getBookingDate());
@@ -48,7 +61,21 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public void cancelBooking(Long bookingId) {
+        Booking booking = bookingRepo.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        // Cancel a seat on the flight (this will handle the case where bookedSeats is 0)
+        Flight flight = booking.getFlight();
+        flight.cancelSeat();
+        flightRepo.save(flight);
+        
         bookingRepo.deleteById(bookingId);
+    }
+    
+    @Override
+    public List<Booking> findAllBookings() {
+        return bookingRepo.findAll();
     }
 }

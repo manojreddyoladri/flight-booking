@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.springboot.common.dto.BookingDTO;
 import com.springboot.common.dto.BookingRequestDTO;
+import com.springboot.common.model.Booking;
 import com.springboot.common.service.BookingService;
 
 @RestController
@@ -30,6 +31,12 @@ public class BookingController {
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<BookingDTO>> byCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(service.getBookingsByCustomer(customerId));
+    }
+    
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> all = service.findAllBookings();
+        return ResponseEntity.ok(all);
     }
 
     @DeleteMapping("/{id}")
