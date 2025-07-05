@@ -1,6 +1,8 @@
 package com.springboot.common.service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,13 @@ public class CustomerServiceImpl implements CustomerService {
         Customer c = new Customer(dto.getName(), dto.getEmail());
         c = repo.save(c);
         return new CustomerDTO(c.getId(), c.getName(), c.getEmail());
+    }
+
+    @Override
+    public List<CustomerDTO> getAllCustomers() {
+        return repo.findAll().stream()
+            .map(c -> new CustomerDTO(c.getId(), c.getName(), c.getEmail()))
+            .collect(Collectors.toList());
     }
 
     @Override

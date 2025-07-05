@@ -1,6 +1,7 @@
 package com.springboot.common.controller;
 
 import java.net.URI;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,11 @@ public class CustomerController {
         CustomerDTO created = service.addCustomer(dto);
         return ResponseEntity.created(URI.create("/api/customers/" + created.getId()))
                              .body(created);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CustomerDTO>> getAllCustomers() {
+        return ResponseEntity.ok(service.getAllCustomers());
     }
 
     @GetMapping("/{id}")

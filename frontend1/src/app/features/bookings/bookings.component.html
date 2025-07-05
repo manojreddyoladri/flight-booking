@@ -70,10 +70,6 @@
           Create Booking
         </button>
         
-        <div *ngIf="!selectedFlightAvailable && bookingForm.get('flightId')?.value" 
-             class="alert alert-warning mt-2">
-          Selected flight has no available seats.
-        </div>
       </form>
     </div>
   </div>

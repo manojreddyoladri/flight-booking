@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FlightService } from '../../services/flight.service';
 import { Flight } from '../../models/flight.model';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject, Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 
@@ -40,29 +40,59 @@ import { ReactiveFormsModule } from '@angular/forms';
     </div>
   `
 })
-export class FlightsComponent implements OnInit {
+export class FlightsComponent implements OnInit, OnDestroy {
+    private flightsSubject = new BehaviorSubject<Flight[]>([]);
     flightState$: Observable<Flight[]>;
     form: FormGroup;
+    private subscription = new Subscription();
   
     constructor(
       private flightService: FlightService,
       private fb: FormBuilder
     ) {
-      this.flightState$ = this.flightService.flights$;
+      this.flightState$ = this.flightsSubject.asObservable();
       this.form = this.fb.group({ airlineName: [''], totalSeats: [0] });
     }
   
     ngOnInit() {
-      this.flightService.loadAll();
+      this.loadFlights();
+    }
+
+    ngOnDestroy() {
+      this.subscription.unsubscribe();
+    }
+  
+    loadFlights() {
+      this.subscription.add(
+        this.flightService.loadAllFlights().subscribe({
+          next: (flights) => {
+            this.flightsSubject.next(flights);
+          },
+          error: (error) => {
+            console.error('Error loading flights:', error);
+          }
+        })
+      );
     }
   
     onSubmit() {
-      this.flightService.add(this.form.value);
-      this.form.reset();
+      const flightData = this.form.value;
+      this.subscription.add(
+        this.flightService.addFlight(flightData).subscribe({
+          next: (newFlight) => {
+            const currentFlights = this.flightsSubject.value;
+            this.flightsSubject.next([...currentFlights, newFlight]);
+            this.form.reset();
+          },
+          error: (error) => {
+            console.error('Error adding flight:', error);
+          }
+        })
+      );
     }
 
     refreshFlights() {
       console.log('Manual refresh triggered');
-      this.flightService.loadAll();
+      this.loadFlights();
     }
 }
