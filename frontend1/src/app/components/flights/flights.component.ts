@@ -13,6 +13,9 @@ import { ReactiveFormsModule } from '@angular/forms';
   template: `
     <div class="container">
       <h2>Flights</h2>
+      <div class="mb-3">
+        <button class="btn btn-secondary" (click)="refreshFlights()">Refresh Flight Data</button>
+      </div>
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <input formControlName="airlineName" placeholder="Airline Name" class="form-control mb-2" />
         <input formControlName="totalSeats" type="number" placeholder="Total Seats" class="form-control mb-2" />
@@ -20,11 +23,18 @@ import { ReactiveFormsModule } from '@angular/forms';
       </form>
       <ul class="list-group mt-3">
         <li *ngFor="let f of flightState$ | async" class="list-group-item">
-          {{ f.airlineName }} (Seats: {{ f.totalSeats }})
-          <button class="btn btn-sm btn-info ms-2" (click)="checkAvailability(f.id)">Check Availability</button>
-          <span *ngIf="availabilityMap[f.id] !== undefined" class="ms-2">
-            Available: {{ availabilityMap[f.id] }}
-          </span>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ f.airlineName }}</strong>
+              <br>
+              <small>Total Seats: {{ f.totalSeats }} | Available: {{ f.availableSeats }}</small>
+            </div>
+            <div>
+              <span class="badge" [ngClass]="f.availableSeats > 0 ? 'bg-success' : 'bg-danger'">
+                {{ f.availableSeats > 0 ? 'Available' : 'Full' }}
+              </span>
+            </div>
+          </div>
         </li>
       </ul>
     </div>
@@ -33,7 +43,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 export class FlightsComponent implements OnInit {
     flightState$: Observable<Flight[]>;
     form: FormGroup;
-    availabilityMap: { [flightId: number]: number } = {};
   
     constructor(
       private flightService: FlightService,
@@ -52,10 +61,8 @@ export class FlightsComponent implements OnInit {
       this.form.reset();
     }
 
-    checkAvailability(flightId: number) {
-      this.flightService.checkAvailability(flightId).subscribe({
-        next: available => this.availabilityMap[flightId] = available,
-        error: () => this.availabilityMap[flightId] = -1
-      });
+    refreshFlights() {
+      console.log('Manual refresh triggered');
+      this.flightService.loadAll();
     }
 }

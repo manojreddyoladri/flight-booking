@@ -14,25 +14,45 @@ export class FlightService {
   constructor(private http: HttpClient) {}
 
   loadAll(): void {
+    console.log('Loading all flights...');
     this.http.get<Flight[]>(this.baseUrl)
       .subscribe({
-        next: (flights) => this.flightsSubject.next(flights),
-        error: (error) => console.error('Error loading flights:', error)
+        next: (flights) => {
+          console.log('Flights loaded successfully:', flights);
+          console.log('Number of flights:', flights.length);
+          flights.forEach(f => {
+            console.log(`Flight ${f.id}: ${f.airlineName} - ${f.availableSeats} available seats`);
+          });
+          this.flightsSubject.next(flights);
+        },
+        error: (error) => {
+          console.error('Error loading flights:', error);
+        }
       });
   }
 
   add(flight: Flight): void {
+    console.log('Adding flight:', flight);
     this.http.post<Flight>(this.baseUrl, flight)
       .subscribe({
         next: (newFlight) => {
+          console.log('Flight added successfully:', newFlight);
           const currentFlights = this.flightsSubject.value;
           this.flightsSubject.next([...currentFlights, newFlight]);
         },
-        error: (error) => console.error('Error adding flight:', error)
+        error: (error) => {
+          console.error('Error adding flight:', error);
+        }
       });
   }
 
   checkAvailability(flightId: number): Observable<number> {
     return this.http.get<number>(`${this.baseUrl}/${flightId}/availability`);
+  }
+
+  // Method to refresh flight data after booking operations
+  refreshFlights(): void {
+    console.log('Refreshing flights...');
+    this.loadAll();
   }
 }
