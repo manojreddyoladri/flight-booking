@@ -1,197 +1,173 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, OnInit, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FlightStore } from './flight.store';
+import { FlightService } from '../../services/flight.service';
+import { Flight } from '../../models/flight.model';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../shared/components/error-message/error-message.component';
-import { Flight } from '../../models/flight.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-flights',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
-  providers: [FlightStore],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  templateUrl: './flights.component.html',
+  styleUrls: ['./flights.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="container">
-      <h2>Flight Management</h2>
-      
-      <!-- Error Message -->
-      <app-error-message 
-        [error]="store.error$ | async" 
-        [retryFn]="loadFlights.bind(this)">
-      </app-error-message>
-      
-      <!-- Loading Spinner -->
-      <app-loading-spinner 
-        [isLoading]="store.loading$ | async" 
-        message="Loading flights...">
-      </app-loading-spinner>
-      
-      <!-- Flight Statistics -->
-      <div class="row mb-4" *ngIf="!(store.loading$ | async)">
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title">Total Flights</h5>
-              <p class="card-text display-6">{{ store.flightsCount$ | async }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title">Available Flights</h5>
-              <p class="card-text display-6">{{ (store.availableFlights$ | async)?.length || 0 }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title">Full Flights</h5>
-              <p class="card-text display-6">{{ (store.fullFlights$ | async)?.length || 0 }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title">Total Available Seats</h5>
-              <p class="card-text display-6">{{ store.totalAvailableSeats$ | async }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Add Flight Form -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h5>Add New Flight</h5>
-        </div>
-        <div class="card-body">
-          <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
-            <div class="row">
-              <div class="col-md-6">
-                <label for="airlineName" class="form-label">Airline Name</label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="airlineName" 
-                  formControlName="airlineName" 
-                  placeholder="Enter airline name"
-                />
-                <div *ngIf="flightForm.get('airlineName')?.invalid && flightForm.get('airlineName')?.touched" 
-                     class="text-danger small">
-                  Airline name is required
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label for="totalSeats" class="form-label">Total Seats</label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  id="totalSeats" 
-                  formControlName="totalSeats" 
-                  placeholder="Enter total seats"
-                  min="1"
-                />
-                <div *ngIf="flightForm.get('totalSeats')?.invalid && flightForm.get('totalSeats')?.touched" 
-                     class="text-danger small">
-                  Total seats must be greater than 0
-                </div>
-              </div>
-            </div>
-            <button 
-              type="submit" 
-              class="btn btn-primary mt-3" 
-              [disabled]="flightForm.invalid || (store.loading$ | async)">
-              Add Flight
-            </button>
-          </form>
-        </div>
-      </div>
-      
-      <!-- Flights List -->
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5>Available Flights</h5>
-          <button 
-            class="btn btn-secondary" 
-            (click)="loadFlights()"
-            [disabled]="store.loading$ | async">
-            Refresh
-          </button>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Airline</th>
-                  <th>Total Seats</th>
-                  <th>Available Seats</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let flight of store.flights$ | async">
-                  <td>{{ flight.id }}</td>
-                  <td>{{ flight.airlineName }}</td>
-                  <td>{{ flight.totalSeats }}</td>
-                  <td>{{ flight.availableSeats }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="flight.availableSeats > 0 ? 'bg-success' : 'bg-danger'">
-                      {{ flight.availableSeats > 0 ? 'Available' : 'Full' }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div *ngIf="(store.flights$ | async)?.length === 0 && !(store.loading$ | async)" 
-               class="text-center text-muted">
-            No flights available
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  providers: [FlightStore]
 })
 export class FlightsComponent implements OnInit {
-  flightForm: FormGroup;
+  private flightStore = inject(FlightStore);
+  private flightService = inject(FlightService);
+  private fb = inject(FormBuilder);
+  private notificationService = inject(NotificationService);
 
-  constructor(
-    public store: FlightStore,
-    private fb: FormBuilder
-  ) {
+  // Observables
+  flights$ = this.flightStore.flights$;
+  loading$ = this.flightStore.loading$;
+  error$ = this.flightStore.error$;
+  availableFlights$ = this.flightStore.availableFlights$;
+  fullFlights$ = this.flightStore.fullFlights$;
+  totalAvailableSeats$ = this.flightStore.totalAvailableSeats$;
+  flightsCount$ = this.flightStore.flightsCount$;
+
+  // Form
+  flightForm: FormGroup;
+  isEditing = false;
+  editingFlightId: number | null = null;
+
+  // Search and filter properties
+  searchAirline: string = '';
+  searchDate: string = '';
+  searchPrice: number | null = null;
+  searchSeats: number | null = null;
+  searchStatus: string = '';
+  sortField: string = 'date';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
+  constructor() {
     this.flightForm = this.fb.group({
       airlineName: ['', [Validators.required, Validators.minLength(2)]],
-      totalSeats: [0, [Validators.required, Validators.min(1)]]
+      totalSeats: [0, [Validators.required, Validators.min(1), Validators.max(500)]],
+      flightDate: ['', Validators.required],
+      price: [0, [Validators.required, Validators.min(0.01)]]
     });
   }
 
-  ngOnInit() {
-    this.loadFlights();
+  ngOnInit(): void {
+    this.refreshFlights();
   }
 
-  loadFlights() {
-    this.store.loadFlights();
+  refreshFlights(): void {
+    // Load flights from backend's current date
+    this.flightStore.loadFutureFlightsToday();
   }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.flightForm.valid) {
-      const flight: Flight = {
-        id: 0, // Will be assigned by backend
-        airlineName: this.flightForm.value.airlineName,
-        totalSeats: this.flightForm.value.totalSeats,
-        availableSeats: this.flightForm.value.totalSeats
-      };
+      const flightData = this.flightForm.value;
       
-      this.store.addFlightEffect(flight);
-      this.flightForm.reset();
+      if (this.isEditing && this.editingFlightId) {
+        this.flightStore.updateFlightEffect({ id: this.editingFlightId, flight: flightData });
+        this.notificationService.showSuccess('Flight updated successfully!');
+      } else {
+        this.flightStore.addFlightEffect(flightData);
+        this.notificationService.showSuccess('Flight added successfully!');
+      }
+      
+      this.resetForm();
     }
+  }
+
+  editFlight(flight: Flight): void {
+    this.isEditing = true;
+    this.editingFlightId = flight.id;
+    this.flightForm.patchValue({
+      airlineName: flight.airlineName,
+      totalSeats: flight.totalSeats,
+      flightDate: flight.flightDate,
+      price: flight.price
+    });
+  }
+
+  deleteFlight(flightId: number): void {
+    if (confirm('Are you sure you want to delete this flight?')) {
+      this.flightStore.deleteFlightEffect(flightId);
+      this.notificationService.showSuccess('Flight deleted successfully!');
+    }
+  }
+
+  cancelEdit(): void {
+    this.isEditing = false;
+    this.editingFlightId = null;
+    this.resetForm();
+  }
+
+  resetForm(): void {
+    this.flightForm.reset();
+    this.isEditing = false;
+    this.editingFlightId = null;
+  }
+
+  checkAvailability(flightId: number): void {
+    this.flightService.checkAvailability(flightId).subscribe({
+      next: (availableSeats) => {
+        this.notificationService.showInfo(`Available seats: ${availableSeats}`);
+      },
+      error: () => {
+        this.notificationService.showError('Failed to check availability');
+      }
+    });
+  }
+
+  // Advanced filtering methods
+  applyFilters(): void {
+    // For now, just refresh flights - filtering will be implemented in the store
+    this.refreshFlights();
+    this.notificationService.showInfo('Filters applied');
+  }
+
+  clearFilters(): void {
+    this.searchAirline = '';
+    this.searchDate = '';
+    this.searchPrice = null;
+    this.searchSeats = null;
+    this.searchStatus = '';
+    this.refreshFlights();
+    this.notificationService.showInfo('Filters cleared');
+  }
+
+  sortBy(field: string): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    
+    // For now, just show a notification - sorting will be implemented in the store
+    this.notificationService.showInfo(`Sorted by ${field} (${this.sortDirection})`);
+  }
+
+  exportFlights(): void {
+    // Placeholder for export functionality
+    this.notificationService.showInfo('Export functionality will be implemented in the next version');
+    
+    // In a real implementation, you would:
+    // 1. Get the current filtered flights
+    // 2. Convert to CSV/Excel format
+    // 3. Trigger download
+    // Example:
+    // this.flightService.exportFlights(this.currentFilters).subscribe({
+    //   next: (blob) => {
+    //     const url = window.URL.createObjectURL(blob);
+    //     const link = document.createElement('a');
+    //     link.href = url;
+    //     link.download = 'flights-export.csv';
+    //     link.click();
+    //     window.URL.revokeObjectURL(url);
+    //   }
+    // });
   }
 } 

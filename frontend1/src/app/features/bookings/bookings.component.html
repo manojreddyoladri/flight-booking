@@ -9,24 +9,32 @@
     <div class="card-body">
       <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()">
         <div class="row">
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <label for="selectedDate" class="form-label">Select Date</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              id="selectedDate" 
+              [(ngModel)]="selectedDate"
+              (change)="onDateChange()"
+              [ngModelOptions]="{standalone: true}"
+            />
+          </div>
+          <div class="col-md-3">
             <label for="flightId" class="form-label">Flight</label>
             <select class="form-control" id="flightId" formControlName="flightId">
                 <option value="">Select Flight</option>
                 <option
-                  *ngFor="let f of flights$ | async"
+                  *ngFor="let f of availableFlights$ | async"
                   [value]="f.id"
-                  [disabled]="f.availableSeats === 0"
                 >
-                  {{ f.airlineName }} (ID: {{ f.id }}) –
-                  {{ f.availableSeats === 0
-                      ? 'Full'
-                      : (f.availableSeats + ' seats available') }}
+                  {{ f.airlineName }} - {{ f.flightDate | date:'shortDate' }} - ${{ f.price | number:'1.2-2' }} 
+                  ({{ f.availableSeats }} seats available)
                 </option>
               </select>
               
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label for="customerId" class="form-label">Customer ID</label>
             <input 
               type="number" 
@@ -36,16 +44,18 @@
               placeholder="Enter customer ID"
             />
           </div>
-          <div class="col-md-4">
-            <label for="price" class="form-label">Price</label>
+          <div class="col-md-3">
+            <label for="price" class="form-label">Price (Auto-set from Flight)</label>
             <input 
               type="number" 
               class="form-control" 
               id="price" 
               formControlName="price" 
-              placeholder="Enter price"
-              step="0.01"
+              placeholder="Price will be set automatically"
+              readonly
+              style="background-color: #f8f9fa;"
             />
+            <small class="text-muted">Price is automatically set based on the selected flight</small>
           </div>
         </div>
         
@@ -61,6 +71,15 @@
             Price valid: {{ bookingForm.get('price')?.valid }}
           </small>
         </div>
+
+        <!-- Selected Flight Details -->
+        <div class="alert alert-info mt-3" *ngIf="bookingForm.get('flightId')?.value && selectedFlightAvailable">
+          <h6>Selected Flight Details:</h6>
+          <div *ngIf="getSelectedFlightDetails() as flight">
+            <strong>{{ flight.airlineName }}</strong> - {{ flight.flightDate | date:'fullDate' }}<br>
+            <small>Price: ${{ flight.price | number:'1.2-2' }} | Available Seats: {{ flight.availableSeats }}</small>
+          </div>
+        </div>
         
         <button 
           type="submit" 
@@ -72,6 +91,51 @@
         
       </form>
     </div>
+  </div>
+
+  <!-- Available Flights for Selected Date -->
+  <div class="card mb-4" *ngIf="(flights$ | async) && (flights$ | async)!.length > 0">
+    <div class="card-header">
+      <h5>Available Flights for {{ selectedDate | date:'fullDate' }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Flight ID</th>
+              <th>Airline</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Total Seats</th>
+              <th>Available Seats</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let flight of flights$ | async">
+              <td>{{ flight.id }}</td>
+              <td>{{ flight.airlineName }}</td>
+              <td>{{ flight.flightDate | date:'shortDate' }}</td>
+              <td>${{ flight.price | number:'1.2-2' }}</td>
+              <td>{{ flight.totalSeats }}</td>
+              <td>{{ flight.availableSeats }}</td>
+              <td>
+                <span class="badge" [ngClass]="flight.availableSeats > 0 ? 'bg-success' : 'bg-danger'">
+                  {{ flight.availableSeats > 0 ? 'Available' : 'Full' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning for Past Dates -->
+  <div class="alert alert-warning" *ngIf="(flights$ | async)?.length === 0 && selectedDate">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Warning:</strong> Please select today or a future date to view available flights.
   </div>
 
   <!-- Search Customer Bookings -->

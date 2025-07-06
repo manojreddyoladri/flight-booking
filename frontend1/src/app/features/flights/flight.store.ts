@@ -77,6 +77,11 @@ export class FlightStore extends ComponentStore<FlightState> {
     )
   }));
 
+  readonly removeFlight = this.updater((state, flightId: number) => ({
+    ...state,
+    flights: state.flights.filter(flight => flight.id !== flightId)
+  }));
+
   // Effects
   readonly loadFlights = this.effect((trigger$: Observable<void>) => 
     trigger$.pipe(
@@ -91,12 +96,62 @@ export class FlightStore extends ComponentStore<FlightState> {
     )
   );
 
+  readonly loadFutureFlights = this.effect((date$: Observable<string>) => 
+    date$.pipe(
+      tap(() => this.setLoading(true)),
+      switchMap(date => this.flightService.getFutureFlights(date).pipe(
+        tap(flights => this.setFlights(flights)),
+        catchError(error => {
+          this.setError(error.message || 'Failed to load future flights');
+          return of(null);
+        })
+      ))
+    )
+  );
+
+  readonly loadFutureFlightsToday = this.effect((trigger$: Observable<void>) => 
+    trigger$.pipe(
+      tap(() => this.setLoading(true)),
+      switchMap(() => this.flightService.getFutureFlightsToday().pipe(
+        tap(flights => this.setFlights(flights)),
+        catchError(error => {
+          this.setError(error.message || 'Failed to load future flights (today)');
+          return of(null);
+        })
+      ))
+    )
+  );
+
   readonly addFlightEffect = this.effect((flight$: Observable<Flight>) =>
     flight$.pipe(
       switchMap(flight => this.flightService.addFlight(flight).pipe(
         tap(newFlight => this.addFlight(newFlight)),
         catchError(error => {
           this.setError(error.message || 'Failed to add flight');
+          return of(null);
+        })
+      ))
+    )
+  );
+
+  readonly updateFlightEffect = this.effect((flight$: Observable<{id: number, flight: Flight}>) =>
+    flight$.pipe(
+      switchMap(({id, flight}) => this.flightService.updateFlight(id, flight).pipe(
+        tap(updatedFlight => this.updateFlight(updatedFlight)),
+        catchError(error => {
+          this.setError(error.message || 'Failed to update flight');
+          return of(null);
+        })
+      ))
+    )
+  );
+
+  readonly deleteFlightEffect = this.effect((flightId$: Observable<number>) =>
+    flightId$.pipe(
+      switchMap(flightId => this.flightService.deleteFlight(flightId).pipe(
+        tap(() => this.removeFlight(flightId)),
+        catchError(error => {
+          this.setError(error.message || 'Failed to delete flight');
           return of(null);
         })
       ))
