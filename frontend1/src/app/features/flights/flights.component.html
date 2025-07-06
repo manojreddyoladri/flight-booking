@@ -1,0 +1,311 @@
+<div class="container">
+  <h2>Flight Management</h2>
+  
+  <!-- Loading Spinner -->
+  <app-loading-spinner 
+    [isLoading]="loading$ | async" 
+    message="Loading flights...">
+  </app-loading-spinner>
+  
+  <!-- Error Message -->
+  <app-error-message 
+    [error]="error$ | async" 
+    [retryFn]="refreshFlights.bind(this)">
+  </app-error-message>
+
+  <!-- Advanced Search & Filter -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5><i class="bi bi-search"></i> Advanced Search & Filter</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <label for="searchAirline" class="form-label">Airline</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            id="searchAirline" 
+            placeholder="Search by airline"
+            [(ngModel)]="searchAirline"
+            (input)="applyFilters()"
+          />
+        </div>
+        <div class="col-md-3">
+          <label for="searchDate" class="form-label">Date</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            id="searchDate" 
+            [(ngModel)]="searchDate"
+            (change)="applyFilters()"
+          />
+        </div>
+        <div class="col-md-2">
+          <label for="searchPrice" class="form-label">Max Price</label>
+          <input 
+            type="number" 
+            class="form-control" 
+            id="searchPrice" 
+            placeholder="Max price"
+            [(ngModel)]="searchPrice"
+            (input)="applyFilters()"
+          />
+        </div>
+        <div class="col-md-2">
+          <label for="searchSeats" class="form-label">Min Seats</label>
+          <input 
+            type="number" 
+            class="form-control" 
+            id="searchSeats" 
+            placeholder="Min available seats"
+            [(ngModel)]="searchSeats"
+            (input)="applyFilters()"
+          />
+        </div>
+        <div class="col-md-2">
+          <label for="searchStatus" class="form-label">Status</label>
+          <select class="form-control" id="searchStatus" [(ngModel)]="searchStatus" (change)="applyFilters()">
+            <option value="">All</option>
+            <option value="available">Available</option>
+            <option value="full">Full</option>
+          </select>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-12">
+          <button class="btn btn-secondary me-2" (click)="clearFilters()">
+            <i class="bi bi-x-circle"></i> Clear Filters
+          </button>
+          <button class="btn btn-info me-2" (click)="exportFlights()">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <span class="text-muted">
+            Showing {{ (flights$ | async)?.length || 0 }} of {{ (flightsCount$ | async) || 0 }} flights
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Flight Form -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>{{ isEditing ? 'Edit Flight' : 'Add New Flight' }}</h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <div class="col-md-6">
+            <label for="airlineName" class="form-label">Airline Name</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="airlineName" 
+              formControlName="airlineName" 
+              placeholder="Enter airline name"
+            />
+            <div *ngIf="flightForm.get('airlineName')?.invalid && flightForm.get('airlineName')?.touched" 
+                 class="text-danger small">
+              Airline name is required and must be at least 2 characters
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="totalSeats" class="form-label">Total Seats</label>
+            <input 
+              type="number" 
+              class="form-control" 
+              id="totalSeats" 
+              formControlName="totalSeats" 
+              placeholder="Enter total seats"
+              min="1"
+              max="500"
+            />
+            <div *ngIf="flightForm.get('totalSeats')?.invalid && flightForm.get('totalSeats')?.touched" 
+                 class="text-danger small">
+              Total seats must be between 1 and 500
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label for="flightDate" class="form-label">Flight Date</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              id="flightDate" 
+              formControlName="flightDate" 
+            />
+            <div *ngIf="flightForm.get('flightDate')?.invalid && flightForm.get('flightDate')?.touched" 
+                 class="text-danger small">
+              Flight date is required
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="price" class="form-label">Price ($)</label>
+            <input 
+              type="number" 
+              class="form-control" 
+              id="price" 
+              formControlName="price" 
+              placeholder="Enter price"
+              min="0.01"
+              step="0.01"
+            />
+            <div *ngIf="flightForm.get('price')?.invalid && flightForm.get('price')?.touched" 
+                 class="text-danger small">
+              Price must be greater than 0
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <button 
+            type="submit" 
+            class="btn btn-primary me-2" 
+            [disabled]="flightForm.invalid || (loading$ | async)">
+            {{ isEditing ? 'Update Flight' : 'Add Flight' }}
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            (click)="cancelEdit()"
+            *ngIf="isEditing">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Flights List -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5>Future Flights (Today and Beyond)</h5>
+      <div>
+        <button 
+          class="btn btn-outline-primary me-2" 
+          (click)="sortBy('date')"
+          [class.active]="sortField === 'date'">
+          <i class="bi bi-calendar"></i> Sort by Date
+        </button>
+        <button 
+          class="btn btn-outline-primary me-2" 
+          (click)="sortBy('price')"
+          [class.active]="sortField === 'price'">
+          <i class="bi bi-currency-dollar"></i> Sort by Price
+        </button>
+        <button 
+          class="btn btn-outline-primary me-2" 
+          (click)="sortBy('seats')"
+          [class.active]="sortField === 'seats'">
+          <i class="bi bi-person"></i> Sort by Seats
+        </button>
+        <button 
+          class="btn btn-secondary" 
+          (click)="refreshFlights()"
+          [disabled]="loading$ | async">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Airline</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Total Seats</th>
+              <th>Available Seats</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let flight of flights$ | async">
+              <td>{{ flight.id }}</td>
+              <td>{{ flight.airlineName }}</td>
+              <td>{{ flight.flightDate | date:'shortDate' }}</td>
+              <td>${{ flight.price | number:'1.2-2' }}</td>
+              <td>{{ flight.totalSeats }}</td>
+              <td>{{ flight.availableSeats }}</td>
+              <td>
+                <span class="badge" [ngClass]="flight.availableSeats > 0 ? 'bg-success' : 'bg-danger'">
+                  {{ flight.availableSeats > 0 ? 'Available' : 'Full' }}
+                </span>
+              </td>
+              <td>
+                <button 
+                  class="btn btn-sm btn-outline-primary me-1" 
+                  (click)="editFlight(flight)"
+                  title="Edit Flight">
+                  <i class="bi bi-pencil"></i>Edit
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-danger me-1" 
+                  (click)="deleteFlight(flight.id)"
+                  title="Delete Flight">
+                  <i class="bi bi-trash"></i>Delete
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-info" 
+                  (click)="checkAvailability(flight.id)"
+                  title="Check Availability">
+                  <i class="bi bi-info-circle"></i>Check Availability
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- No flights message -->
+      <div *ngIf="(flights$ | async)?.length === 0 && !(loading$ | async)" 
+           class="text-center text-muted py-4">
+        <i class="bi bi-airplane display-1"></i>
+        <p class="mt-3">No flights found matching your criteria</p>
+        <button class="btn btn-primary" (click)="clearFilters()">
+          Clear Filters
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Summary -->
+  <div class="row mt-4" *ngIf="!(loading$ | async)">
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h6 class="card-title">Total Flights</h6>
+          <p class="card-text display-6">{{ (flightsCount$ | async) || 0 }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h6 class="card-title">Available Flights</h6>
+          <p class="card-text display-6 text-success">{{ (availableFlights$ | async)?.length || 0 }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h6 class="card-title">Total Available Seats</h6>
+          <p class="card-text display-6 text-info">{{ (totalAvailableSeats$ | async) || 0 }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h6 class="card-title">Full Flights</h6>
+          <p class="card-text display-6 text-danger">{{ (fullFlights$ | async)?.length || 0 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

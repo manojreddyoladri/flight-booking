@@ -1,0 +1,299 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4">
+        <i class="bi bi-graph-up"></i>
+        Reports Dashboard
+      </h2>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <app-loading-spinner 
+    [isLoading]="loading$ | async" 
+    message="Loading reports...">
+  </app-loading-spinner>
+  
+  <!-- Error Message -->
+  <app-error-message 
+    [error]="error$ | async" 
+    [retryFn]="loadReports.bind(this)">
+  </app-error-message>
+
+  <!-- Filter Controls -->
+  <div class="card mb-4" *ngIf="!(loading$ | async)">
+    <div class="card-header">
+      <h5><i class="bi bi-funnel"></i> Filter & Analytics</h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="filterForm" (ngSubmit)="onFilterChange()">
+        <div class="row">
+          <div class="col-md-4">
+            <label for="airline" class="form-label">Airline</label>
+            <select class="form-control" id="airline" formControlName="airline">
+              <option value="">All Airlines</option>
+              <option *ngFor="let airline of airlines" [value]="airline">
+                {{ airline }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              id="startDate" 
+              formControlName="startDate"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="endDate" class="form-label">End Date</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              id="endDate" 
+              formControlName="endDate"
+            />
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary me-2">
+              <i class="bi bi-search"></i> Apply Filters
+            </button>
+            <button type="button" class="btn btn-success me-2" (click)="exportReports()">
+              <i class="bi bi-download"></i> Export Reports
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="loadReports()">
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard Overview -->
+  <div class="row mb-4" *ngIf="!(loading$ | async)">
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Total Flights</h5>
+          <p class="card-text display-6">{{ (reportData$ | async)?.totalFlights || 0 }}</p>
+          <small class="text-muted">Active flights</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Total Bookings</h5>
+          <p class="card-text display-6">{{ (reportData$ | async)?.totalBookings || 0 }}</p>
+          <small class="text-muted">Confirmed bookings</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Total Customers</h5>
+          <p class="card-text display-6">{{ (reportData$ | async)?.totalCustomers || 0 }}</p>
+          <small class="text-muted">Registered users</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Total Revenue</h5>
+          <p class="card-text display-6 text-success">
+            {{ (reportData$ | async)?.totalRevenue || 0 | currency }}
+          </p>
+          <small class="text-muted">Gross revenue</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Available Seats</h5>
+          <p class="card-text display-6 text-info">
+            {{ (reportData$ | async)?.availableSeats || 0 }}
+          </p>
+          <small class="text-muted">Seats available</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Analytics -->
+  <div class="row" *ngIf="!(loading$ | async)">
+    <!-- Dashboard Stats -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="bi bi-speedometer2"></i> Dashboard Statistics</h5>
+        </div>
+        <div class="card-body">
+          <div *ngIf="reportData$ | async as stats">
+            <div class="row">
+              <div class="col-6">
+                <p><strong>Total Seats:</strong> {{ stats.totalSeats || 0 }}</p>
+                <p><strong>Available Seats:</strong> {{ stats.availableSeats || 0 }}</p>
+              </div>
+              <div class="col-6">
+                <p><strong>Occupancy Rate:</strong> 
+                  <span [class]="getOccupancyRateColor(stats.occupancyRate || 0)">
+                    {{ (stats.occupancyRate || 0) | number:'1.1-1' }}%
+                  </span>
+                </p>
+                <p><strong>Total Revenue:</strong> 
+                  <span [class]="getRevenueColor(stats.totalRevenue || 0)">
+                    {{ (stats.totalRevenue || 0) | currency }}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Analysis -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="bi bi-cash-stack"></i> Revenue Analysis</h5>
+        </div>
+        <div class="card-body">
+          <div *ngIf="reportData$ | async as stats">
+            <div class="row">
+              <div class="col-6">
+                <p><strong>Total Revenue:</strong> {{ stats.totalRevenue | currency }}</p>
+                <p><strong>Total Bookings:</strong> {{ stats.totalBookings }}</p>
+              </div>
+              <div class="col-6">
+                <p><strong>Avg Booking Value:</strong> 
+                  <span *ngIf="stats.totalBookings > 0; else noBookings">
+                    {{ (stats.totalRevenue / stats.totalBookings) | currency }}
+                  </span>
+                  <ng-template #noBookings>$0.00</ng-template>
+                </p>
+                <p><strong>Revenue per Flight:</strong> 
+                  <span *ngIf="stats.totalFlights > 0; else noFlights">
+                    {{ (stats.totalRevenue / stats.totalFlights) | currency }}
+                  </span>
+                  <ng-template #noFlights>$0.00</ng-template>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Airline-Specific Report -->
+  <div class="row" *ngIf="!(loading$ | async)">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="bi bi-airplane"></i> Airline-Specific Report</h5>
+        </div>
+        <div class="card-body">
+          <div *ngIf="selectedAirlineData$ | async as airlineData">
+            <div *ngIf="airlineData.length > 0; else noAirlineData">
+              <div class="row">
+                                                  <div class="col-md-4">
+                   <div class="card text-center bg-primary text-white">
+                     <div class="card-body">
+                       <h5 class="card-title">Number of Flights</h5>
+                       <p class="card-text display-6">{{ airlineData[0].ticketsSold || 0 }}</p>
+                       <small>Flights with bookings</small>
+                     </div>
+                   </div>
+                 </div>
+                 <div class="col-md-4">
+                   <div class="card text-center bg-success text-white">
+                     <div class="card-body">
+                       <h5 class="card-title">Total Revenue</h5>
+                       <p class="card-text display-6">{{ airlineData[0].totalRevenue || 0 | currency }}</p>
+                       <small>Revenue earned</small>
+                     </div>
+                   </div>
+                 </div>
+                                 <div class="col-md-4">
+                   <div class="card text-center bg-info text-white">
+                     <div class="card-body">
+                       <h5 class="card-title">Average Price</h5>
+                       <p class="card-text display-6">{{ airlineData[0].averagePrice || 0 | currency }}</p>
+                       <small>Per booking</small>
+                     </div>
+                   </div>
+                 </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-12">
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                                             <thead>
+                         <tr>
+                           <th>Airline</th>
+                           <th>Flights with Bookings</th>
+                           <th>Total Revenue</th>
+                           <th>Average Price</th>
+                         </tr>
+                       </thead>
+                                             <tbody>
+                         <tr *ngFor="let data of airlineData">
+                           <td>{{ data.airlineName }}</td>
+                           <td>{{ data.ticketsSold }}</td>
+                           <td>{{ data.totalRevenue | currency }}</td>
+                           <td>{{ data.averagePrice | currency }}</td>
+                         </tr>
+                       </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-template #noAirlineData>
+              <div class="text-center text-muted">
+                <i class="bi bi-info-circle fs-1"></i>
+                <p class="mt-3">No airline selected or no data found for the selected airline and date range.</p>
+                <p>Please select an airline and date range to view airline-specific reports.</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="row" *ngIf="!(loading$ | async)">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="bi bi-info-circle"></i> Summary</h5>
+        </div>
+        <div class="card-body">
+          <div *ngIf="reportData$ | async as stats">
+            <p><strong>System Overview:</strong> The flight booking system currently has {{ stats.totalFlights }} active flights with {{ stats.totalBookings }} confirmed bookings from {{ stats.totalCustomers }} registered customers.</p>
+            <p><strong>Financial Performance:</strong> Total revenue generated is {{ stats.totalRevenue | currency }} with an average booking value of 
+              <span *ngIf="stats.totalBookings > 0; else noBookingsSummary">
+                {{ (stats.totalRevenue / stats.totalBookings) | currency }}
+              </span>
+              <ng-template #noBookingsSummary>$0.00</ng-template>.
+            </p>
+            <p><strong>Capacity Utilization:</strong> Current occupancy rate is {{ (stats.occupancyRate || 0) | number:'1.1-1' }}% with {{ stats.availableSeats }} seats still available for booking.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

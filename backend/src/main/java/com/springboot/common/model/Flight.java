@@ -1,6 +1,8 @@
 package com.springboot.common.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "flights")
@@ -18,12 +20,21 @@ public class Flight {
     @Column(nullable = false)
     private int bookedSeats = 0;
 
+    @Column(nullable = false)
+    private LocalDate flightDate;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
     // Constructors, getters, setters
     public Flight() {}
-    public Flight(String airlineName, int totalSeats) {
+    
+    public Flight(String airlineName, int totalSeats, LocalDate flightDate, BigDecimal price) {
         this.airlineName = airlineName;
         this.totalSeats = totalSeats;
         this.bookedSeats = 0;
+        this.flightDate = flightDate;
+        this.price = price;
     }
     
     public Long getId() { return id; }
@@ -33,6 +44,10 @@ public class Flight {
     public void setTotalSeats(int totalSeats) { this.totalSeats = totalSeats; }
     public int getBookedSeats() { return bookedSeats; }
     public void setBookedSeats(int bookedSeats) { this.bookedSeats = bookedSeats; }
+    public LocalDate getFlightDate() { return flightDate; }
+    public void setFlightDate(LocalDate flightDate) { this.flightDate = flightDate; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
     
     public int getAvailableSeats() {
         return totalSeats - bookedSeats;
