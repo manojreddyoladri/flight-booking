@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -222,13 +223,13 @@ class CustomerServiceTest {
     @Test
     void testGetAllCustomers_LargeDataset() {
         // Arrange
-        List<Customer> customers = Arrays.asList();
+        List<Customer> customers = new ArrayList<>();
         for (int i = 1; i <= 100; i++) {
             Customer customer = new Customer();
             customer.setId((long) i);
             customer.setName("Customer " + i);
             customer.setEmail("customer" + i + "@email.com");
-            customers = Arrays.asList(customers.toArray(new Customer[0]));
+            customers.add(customer);
         }
 
         when(customerRepository.findAll()).thenReturn(customers);

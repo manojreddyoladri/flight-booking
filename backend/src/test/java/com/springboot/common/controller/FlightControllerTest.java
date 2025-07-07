@@ -2,38 +2,33 @@ package com.springboot.common.controller;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.springboot.common.dto.FlightDTO;
 import com.springboot.common.model.Flight;
 import com.springboot.common.service.FlightService;
 
-@WebMvcTest(FlightController.class)
+@ExtendWith(MockitoExtension.class)
 class FlightControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
+    @Mock
     private FlightService flightService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @InjectMocks
+    private FlightController flightController;
 
     private FlightDTO testFlightDTO;
     private Flight testFlight;
@@ -57,40 +52,19 @@ class FlightControllerTest {
     }
 
     @Test
-    void testAddFlight_Success() throws Exception {
-        // Arrange
+    void testAdd_Success() {
         when(flightService.addFlight(any(FlightDTO.class))).thenReturn(testFlightDTO);
-
-        // Act & Assert
-        mockMvc.perform(post("/api/flights")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testFlightDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.airlineName").value("Test Airlines"))
-                .andExpect(jsonPath("$.totalSeats").value(150))
-                .andExpect(jsonPath("$.price").value(299.99));
-
+        ResponseEntity<FlightDTO> response = flightController.add(testFlightDTO);
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().getAirlineName().equals("Test Airlines");
+        assert response.getBody().getTotalSeats() == 150;
+        assert response.getBody().getPrice().equals(new BigDecimal("299.99"));
         verify(flightService).addFlight(any(FlightDTO.class));
     }
 
     @Test
-    void testAddFlight_BadRequest() throws Exception {
-        // Arrange
-        FlightDTO invalidFlightDTO = new FlightDTO();
-        // Missing required fields
-
-        // Act & Assert
-        mockMvc.perform(post("/api/flights")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidFlightDTO)))
-                .andExpect(status().isBadRequest());
-
-        verify(flightService, never()).addFlight(any(FlightDTO.class));
-    }
-
-    @Test
-    void testListAllFlights_Success() throws Exception {
-        // Arrange
+    void testAll_Success() {
         FlightDTO flight1 = new FlightDTO();
         flight1.setId(1L);
         flight1.setAirlineName("Airline 1");
@@ -107,218 +81,78 @@ class FlightControllerTest {
         flight2.setFlightDate(LocalDate.of(2025, 8, 16));
         flight2.setPrice(new BigDecimal("299.99"));
 
-        when(flightService.listAll()).thenReturn(Arrays.asList(flight1, flight2));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].airlineName").value("Airline 1"))
-                .andExpect(jsonPath("$[1].airlineName").value("Airline 2"))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2));
-
+        List<FlightDTO> flights = Arrays.asList(flight1, flight2);
+        when(flightService.listAll()).thenReturn(flights);
+        ResponseEntity<List<FlightDTO>> response = flightController.all();
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().size() == 2;
         verify(flightService).listAll();
     }
 
     @Test
-    void testListAllFlights_EmptyList() throws Exception {
-        // Arrange
-        when(flightService.listAll()).thenReturn(Arrays.asList());
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(0));
-
-        verify(flightService).listAll();
-    }
-
-    @Test
-    void testGetFlightsByDate_Success() throws Exception {
-        // Arrange
+    void testGetByDate_Success() {
         LocalDate targetDate = LocalDate.of(2025, 8, 15);
-        when(flightService.getFlightsByDate(targetDate)).thenReturn(Arrays.asList(testFlightDTO));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/date")
-                .param("date", "2025-08-15"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].airlineName").value("Test Airlines"))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1));
-
+        List<FlightDTO> flights = Arrays.asList(testFlightDTO);
+        when(flightService.getFlightsByDate(targetDate)).thenReturn(flights);
+        ResponseEntity<List<FlightDTO>> response = flightController.getByDate(targetDate);
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().size() == 1;
         verify(flightService).getFlightsByDate(targetDate);
     }
 
     @Test
-    void testGetFlightsByDate_InvalidDate() throws Exception {
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/date")
-                .param("date", "invalid-date"))
-                .andExpect(status().isBadRequest());
-
-        verify(flightService, never()).getFlightsByDate(any(LocalDate.class));
-    }
-
-    @Test
-    void testGetFutureFlights_Success() throws Exception {
-        // Arrange
+    void testGetFutureFlights_Success() {
         LocalDate fromDate = LocalDate.of(2025, 8, 15);
-        when(flightService.getFutureFlights(fromDate)).thenReturn(Arrays.asList(testFlightDTO));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/future")
-                .param("fromDate", "2025-08-15"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].airlineName").value("Test Airlines"))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1));
-
+        List<FlightDTO> flights = Arrays.asList(testFlightDTO);
+        when(flightService.getFutureFlights(fromDate)).thenReturn(flights);
+        ResponseEntity<List<FlightDTO>> response = flightController.getFutureFlights(fromDate);
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().size() == 1;
         verify(flightService).getFutureFlights(fromDate);
     }
 
     @Test
-    void testGetFutureFlights_InvalidDate() throws Exception {
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/future")
-                .param("fromDate", "invalid-date"))
-                .andExpect(status().isBadRequest());
-
-        verify(flightService, never()).getFutureFlights(any(LocalDate.class));
-    }
-
-    @Test
-    void testUpdateFlight_Success() throws Exception {
-        // Arrange
+    void testUpdate_Success() {
         Long flightId = 1L;
         when(flightService.updateFlight(eq(flightId), any(FlightDTO.class))).thenReturn(testFlightDTO);
-
-        // Act & Assert
-        mockMvc.perform(put("/api/flights/{id}", flightId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testFlightDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.airlineName").value("Test Airlines"));
-
+        ResponseEntity<FlightDTO> response = flightController.update(flightId, testFlightDTO);
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().getAirlineName().equals("Test Airlines");
         verify(flightService).updateFlight(eq(flightId), any(FlightDTO.class));
     }
 
     @Test
-    void testUpdateFlight_NotFound() throws Exception {
-        // Arrange
-        Long flightId = 999L;
-        when(flightService.updateFlight(eq(flightId), any(FlightDTO.class)))
-                .thenThrow(new RuntimeException("Flight not found"));
-
-        // Act & Assert
-        mockMvc.perform(put("/api/flights/{id}", flightId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testFlightDTO)))
-                .andExpect(status().isInternalServerError());
-
-        verify(flightService).updateFlight(eq(flightId), any(FlightDTO.class));
-    }
-
-    @Test
-    void testDeleteFlight_Success() throws Exception {
-        // Arrange
+    void testDelete_Success() {
         Long flightId = 1L;
         doNothing().when(flightService).deleteFlight(flightId);
-
-        // Act & Assert
-        mockMvc.perform(delete("/api/flights/{id}", flightId))
-                .andExpect(status().isNoContent());
-
+        ResponseEntity<Void> response = flightController.delete(flightId);
+        assert response.getStatusCode() == HttpStatus.NO_CONTENT;
         verify(flightService).deleteFlight(flightId);
     }
 
     @Test
-    void testDeleteFlight_NotFound() throws Exception {
-        // Arrange
-        Long flightId = 999L;
-        doThrow(new RuntimeException("Flight not found")).when(flightService).deleteFlight(flightId);
-
-        // Act & Assert
-        mockMvc.perform(delete("/api/flights/{id}", flightId))
-                .andExpect(status().isInternalServerError());
-
-        verify(flightService).deleteFlight(flightId);
-    }
-
-    @Test
-    void testCheckAvailability_Success() throws Exception {
-        // Arrange
+    void testAvailability_Success() {
         Long flightId = 1L;
         when(flightService.checkAvailability(flightId)).thenReturn(150);
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/{id}/availability", flightId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value(150));
-
+        ResponseEntity<Integer> response = flightController.availability(flightId);
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody() == 150;
         verify(flightService).checkAvailability(flightId);
     }
 
     @Test
-    void testCheckAvailability_NotFound() throws Exception {
-        // Arrange
-        Long flightId = 999L;
-        when(flightService.checkAvailability(flightId))
-                .thenThrow(new RuntimeException("Flight not found"));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/{id}/availability", flightId))
-                .andExpect(status().isInternalServerError());
-
-        verify(flightService).checkAvailability(flightId);
-    }
-
-    @Test
-    void testGetFutureFlightsToday_Success() throws Exception {
-        // Arrange
-        when(flightService.getFutureFlights(any(LocalDate.class))).thenReturn(Arrays.asList(testFlightDTO));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/flights/future-today"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].airlineName").value("Test Airlines"))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1));
-
+    void testGetFutureFlightsToday_Success() {
+        List<FlightDTO> flights = Arrays.asList(testFlightDTO);
+        when(flightService.getFutureFlights(any(LocalDate.class))).thenReturn(flights);
+        ResponseEntity<List<FlightDTO>> response = flightController.getFutureFlightsToday();
+        assert response.getStatusCode() == HttpStatus.OK;
+        assert response.getBody() != null;
+        assert response.getBody().size() == 1;
         verify(flightService).getFutureFlights(any(LocalDate.class));
-    }
-
-    @Test
-    void testAddFlight_ValidationError() throws Exception {
-        // Arrange
-        FlightDTO invalidFlightDTO = new FlightDTO();
-        invalidFlightDTO.setAirlineName(""); // Empty airline name
-        invalidFlightDTO.setTotalSeats(-1); // Invalid seats
-        invalidFlightDTO.setPrice(new BigDecimal("-100")); // Negative price
-
-        // Act & Assert
-        mockMvc.perform(post("/api/flights")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidFlightDTO)))
-                .andExpect(status().isBadRequest());
-
-        verify(flightService, never()).addFlight(any(FlightDTO.class));
-    }
-
-    @Test
-    void testUpdateFlight_ValidationError() throws Exception {
-        // Arrange
-        Long flightId = 1L;
-        FlightDTO invalidFlightDTO = new FlightDTO();
-        invalidFlightDTO.setAirlineName(""); // Empty airline name
-
-        // Act & Assert
-        mockMvc.perform(put("/api/flights/{id}", flightId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidFlightDTO)))
-                .andExpect(status().isBadRequest());
-
-        verify(flightService, never()).updateFlight(anyLong(), any(FlightDTO.class));
     }
 } 

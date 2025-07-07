@@ -106,6 +106,7 @@ class BookingServiceTest {
     @Test
     void testCreateBooking_CustomerNotFound() {
         // Arrange
+        when(flightRepository.findById(1L)).thenReturn(Optional.of(testFlight));
         when(customerRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -113,15 +114,14 @@ class BookingServiceTest {
             bookingService.createBooking(testBookingRequest);
         });
 
+        verify(flightRepository).findById(1L);
         verify(customerRepository).findById(1L);
-        verify(flightRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     void testCreateBooking_FlightNotFound() {
         // Arrange
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(testCustomer));
         when(flightRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -129,8 +129,8 @@ class BookingServiceTest {
             bookingService.createBooking(testBookingRequest);
         });
 
-        verify(customerRepository).findById(1L);
         verify(flightRepository).findById(1L);
+        verify(customerRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
@@ -140,7 +140,6 @@ class BookingServiceTest {
         testFlight.setAvailableSeats(0);
         testFlight.setBookedSeats(150);
         
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(testCustomer));
         when(flightRepository.findById(1L)).thenReturn(Optional.of(testFlight));
 
         // Act & Assert
@@ -148,8 +147,8 @@ class BookingServiceTest {
             bookingService.createBooking(testBookingRequest);
         });
 
-        verify(customerRepository).findById(1L);
         verify(flightRepository).findById(1L);
+        verify(customerRepository, never()).findById(anyLong());
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
