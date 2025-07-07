@@ -34,8 +34,13 @@ public class Booking {
         this.bookingDate = LocalDateTime.now();
     }
     public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public Flight getFlight() { return flight; }
+    public void setFlight(Flight flight) { this.flight = flight; }
     public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
     public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
     public LocalDateTime getBookingDate() { return bookingDate; }
+    public void setBookingDate(LocalDateTime bookingDate) { this.bookingDate = bookingDate; }
 }
