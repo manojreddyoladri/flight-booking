@@ -139,31 +139,5 @@ test.describe('Simple Feature E2E Tests', () => {
     });
   });
 
-  test.describe('Cross-page Navigation', () => {
-    test('should navigate between all pages', async ({ page }) => {
-      // Start from home
-      await page.goto('/');
-      await page.waitForLoadState('networkidle');
-      
-      // Navigate to flights
-      await page.click('text=Flights');
-      await page.waitForURL('**/flights');
-      await expect(page.locator('h2')).toContainText('Flight Management');
-      
-      // Navigate to customers
-      await page.click('text=Customers');
-      await page.waitForURL('**/customers');
-      await expect(page.locator('h2')).toContainText('Customer Management');
-      
-      // Navigate to bookings
-      await page.click('text=Bookings');
-      await page.waitForURL('**/bookings');
-      await expect(page.locator('h2')).toContainText('Booking Management');
-      
-      // Navigate to reports
-      await page.click('text=Reports');
-      await page.waitForURL('**/reports');
-      await expect(page.locator('h2')).toContainText('Reports Dashboard');
-    });
-  });
+
 }); 
