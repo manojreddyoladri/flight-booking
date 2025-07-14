@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { CustomersPage } from '../pages/customers.page';
+import { FlightsPage } from '../pages/flights.page';
+import { BookingsPage } from '../pages/bookings.page';
 
 test.describe('Form Submission with API Mocking', () => {
   test('should submit Add Customer form and show success', async ({ page }) => {
+    // Mock API response
     await page.route('**/api/customers', async route => {
       if (route.request().method() === 'POST') {
         await route.fulfill({
@@ -13,21 +17,21 @@ test.describe('Form Submission with API Mocking', () => {
         await route.continue();
       }
     });
-    await page.goto('/customers');
-    await page.waitForLoadState('networkidle');
+
+    const customersPage = new CustomersPage(page);
+    await customersPage.navigateToCustomers();
+    
     const name = 'Mock User';
     const email = 'mock@example.com';
-    await page.fill('#name', name);
-    await page.fill('#email', email);
-    await page.click('text=Add Customer');
+    
+    await customersPage.addCustomer(name, email);
+    
     // Expect form to reset (fields empty)
-    await expect(page.locator('#name')).toHaveValue('');
-    await expect(page.locator('#email')).toHaveValue('');
-    // Optionally, check for a success notification if present
-    // await expect(page.locator('.alert-success')).toContainText('success');
+    await customersPage.verifyAddCustomerFormReset();
   });
 
   test('should submit Add Flight form and show success', async ({ page }) => {
+    // Mock API response
     await page.route('**/api/flights', async route => {
       if (route.request().method() === 'POST') {
         await route.fulfill({
@@ -39,26 +43,21 @@ test.describe('Form Submission with API Mocking', () => {
         await route.continue();
       }
     });
-    await page.goto('/flights');
-    await page.waitForLoadState('networkidle');
-    await page.fill('#airlineName', 'Mock Airline');
-    await page.fill('#totalSeats', '100');
-    await page.fill('#price', '123.45');
-    await page.fill('#flightDate', '2024-12-31');
-    await page.click('text=Add Flight');
+
+    const flightsPage = new FlightsPage(page);
+    await flightsPage.navigateToFlights();
+    
+    await flightsPage.addFlight('Mock Airline', '100', '2024-12-31', '123.45');
+    
     // Expect form to reset (fields empty)
-    await expect(page.locator('#airlineName')).toHaveValue('');
-    await expect(page.locator('#totalSeats')).toHaveValue('');
-    await expect(page.locator('#price')).toHaveValue('');
-    await expect(page.locator('#flightDate')).toHaveValue('');
-    // Optionally, check for a success notification if present
-    // await expect(page.locator('.alert-success')).toContainText('success');
+    await flightsPage.verifyAddFlightFormReset();
   });
 
   test('should submit Create Booking form and show success', async ({ page }) => {
     // Dynamically compute a future date (tomorrow)
-    const tomorrow = new Date(Date.now() + 24*60*60*1000);
-    const futureDate = tomorrow.toISOString().split('T')[0];
+    const bookingsPage = new BookingsPage(page);
+    const futureDate = bookingsPage.getTomorrowDate();
+    
     // Mock GET flights by date API to return at least one flight for the selected date
     await page.route(new RegExp(`/api/flights/by-date\\?date=${futureDate}$`), async route => {
       if (route.request().method() === 'GET') {
@@ -80,6 +79,7 @@ test.describe('Form Submission with API Mocking', () => {
         await route.continue();
       }
     });
+    
     // Mock POST booking API
     await page.route('**/api/bookings', async route => {
       if (route.request().method() === 'POST') {
@@ -92,27 +92,27 @@ test.describe('Form Submission with API Mocking', () => {
         await route.continue();
       }
     });
-    await page.goto('/bookings');
-    await page.waitForLoadState('networkidle');
+
+    await bookingsPage.navigateToBookings();
+    
     // Fill booking form
-    await page.fill('#selectedDate', futureDate);
-    await page.fill('#customerId', '999');
+    await bookingsPage.fillCreateBookingForm(futureDate, '999', '888');
+    
     // Debug: Take a screenshot and log the dropdown HTML after filling the date and customer ID
-    await page.screenshot({ path: 'booking-form-after-date-and-customer.png', fullPage: true });
+    await bookingsPage.takeBookingFormScreenshot('booking-form-after-date-and-customer');
     const dropdownHtml = await page.locator('#flightId').evaluate(el => el.outerHTML);
     console.log('Dropdown HTML after date and customer:', dropdownHtml);
-    // Select the flight option directly (force: true)
-    await page.selectOption('#flightId', '888', { force: true });
-    // Price is auto-set, so skip
-    await page.click('text=Create Booking');
+    
+    // Submit the form
+    await bookingsPage.submitCreateBookingForm();
+    
     // Expect form to reset (customerId field empty)
-    await expect(page.locator('#customerId')).toHaveValue('');
-    // Optionally, check for a success notification if present
-    // await expect(page.locator('.alert-success')).toContainText('success');
+    await bookingsPage.verifyCreateBookingFormReset();
   });
 
   // Optionally, add error scenario for customer form
   test('should show error on failed customer submission', async ({ page }) => {
+    // Mock API error response
     await page.route('**/api/customers', async route => {
       if (route.request().method() === 'POST') {
         await route.fulfill({
@@ -124,11 +124,12 @@ test.describe('Form Submission with API Mocking', () => {
         await route.continue();
       }
     });
-    await page.goto('/customers');
-    await page.waitForLoadState('networkidle');
-    await page.fill('#name', 'Error User');
-    await page.fill('#email', 'error@example.com');
-    await page.click('text=Add Customer');
+
+    const customersPage = new CustomersPage(page);
+    await customersPage.navigateToCustomers();
+    
+    await customersPage.addCustomer('Error User', 'error@example.com');
+    
     // Optionally, check for an error notification if present
     // await expect(page.locator('.alert-danger')).toContainText('error');
   });
