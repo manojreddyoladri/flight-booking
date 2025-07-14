@@ -1,143 +1,132 @@
 import { test, expect } from '@playwright/test';
+import { FlightsPage } from '../pages/flights.page';
+import { CustomersPage } from '../pages/customers.page';
+import { BookingsPage } from '../pages/bookings.page';
+import { ReportsPage } from '../pages/reports.page';
 
 test.describe('Simple Feature E2E Tests', () => {
   
   test.describe('Flights Page', () => {
+    let flightsPage: FlightsPage;
+
     test.beforeEach(async ({ page }) => {
-      await page.goto('/flights');
-      await page.waitForLoadState('networkidle');
+      flightsPage = new FlightsPage(page);
+      await flightsPage.navigateToFlights();
     });
 
     test('should display flights page title', async ({ page }) => {
-      await expect(page.locator('h2')).toContainText('Flight Management');
+      await flightsPage.verifyPageTitle();
     });
 
     test('should display search form fields', async ({ page }) => {
-      await expect(page.locator('#searchAirline')).toBeVisible();
-      await expect(page.locator('#searchDate')).toBeVisible();
-      await expect(page.locator('#searchPrice')).toBeVisible();
+      await flightsPage.verifySearchFormFields();
     });
 
     test('should display add flight form', async ({ page }) => {
-      await expect(page.locator('#airlineName')).toBeVisible();
-      await expect(page.locator('#totalSeats')).toBeVisible();
-      await expect(page.locator('#flightDate')).toBeVisible();
-      await expect(page.locator('#price')).toBeVisible();
+      await flightsPage.verifyAddFlightFormFields();
     });
 
     test('should fill and clear search filters', async ({ page }) => {
       // Fill search fields
-      await page.fill('#searchAirline', 'Test Airline');
-      await page.fill('#searchPrice', '100');
+      await flightsPage.fillSearchFilters('Test Airline', '100');
       
       // Verify values
-      await expect(page.locator('#searchAirline')).toHaveValue('Test Airline');
-      await expect(page.locator('#searchPrice')).toHaveValue('100');
+      await flightsPage.verifySearchFilterValues('Test Airline', '100');
       
       // Clear filters
-      await page.click('text=Clear Filters');
+      await flightsPage.clearSearchFilters();
       
       // Verify cleared
-      await expect(page.locator('#searchAirline')).toHaveValue('');
-      await expect(page.locator('#searchPrice')).toHaveValue('');
+      await flightsPage.verifySearchFiltersCleared();
     });
   });
 
   test.describe('Customers Page', () => {
+    let customersPage: CustomersPage;
+
     test.beforeEach(async ({ page }) => {
-      await page.goto('/customers');
-      await page.waitForLoadState('networkidle');
+      customersPage = new CustomersPage(page);
+      await customersPage.navigateToCustomers();
     });
 
     test('should display customers page title', async ({ page }) => {
-      await expect(page.locator('h2')).toContainText('Customer Management');
+      await customersPage.verifyPageTitle();
     });
 
     test('should display add customer form', async ({ page }) => {
-      await expect(page.locator('#name')).toBeVisible();
-      await expect(page.locator('#email')).toBeVisible();
+      await customersPage.verifyAddCustomerFormFields();
     });
 
     test('should display search customer form', async ({ page }) => {
-      await expect(page.locator('input[placeholder="Enter Customer ID"]')).toBeVisible();
+      await customersPage.verifySearchCustomerForm();
     });
 
     test('should fill customer form fields', async ({ page }) => {
       const name = 'Test Customer ' + Date.now();
       const email = `test${Date.now()}@example.com`;
       
-      await page.fill('#name', name);
-      await page.fill('#email', email);
+      await customersPage.fillAddCustomerForm(name, email);
       
-      await expect(page.locator('#name')).toHaveValue(name);
-      await expect(page.locator('#email')).toHaveValue(email);
+      await customersPage.verifyFormFieldValue('name', name);
+      await customersPage.verifyFormFieldValue('email', email);
     });
   });
 
   test.describe('Bookings Page', () => {
+    let bookingsPage: BookingsPage;
+
     test.beforeEach(async ({ page }) => {
-      await page.goto('/bookings');
-      await page.waitForLoadState('networkidle');
+      bookingsPage = new BookingsPage(page);
+      await bookingsPage.navigateToBookings();
     });
 
     test('should display bookings page title', async ({ page }) => {
-      await expect(page.locator('h2')).toContainText('Booking Management');
+      await bookingsPage.verifyPageTitle();
     });
 
     test('should display create booking form', async ({ page }) => {
-      await expect(page.locator('#selectedDate')).toBeVisible();
-      await expect(page.locator('#flightId')).toBeVisible();
-      await expect(page.locator('#customerId')).toBeVisible();
+      await bookingsPage.verifyCreateBookingFormFields();
     });
 
     test('should select a date for booking', async ({ page }) => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dateString = tomorrow.toISOString().split('T')[0];
+      const tomorrow = bookingsPage.getTomorrowDate();
       
-      await page.fill('#selectedDate', dateString);
-      await expect(page.locator('#selectedDate')).toHaveValue(dateString);
+      await bookingsPage.selectDate(tomorrow);
+      await bookingsPage.verifySelectedDate(tomorrow);
     });
 
     test('should fill customer ID for booking', async ({ page }) => {
-      await page.fill('#customerId', '1');
-      await expect(page.locator('#customerId')).toHaveValue('1');
+      await bookingsPage.fillCustomerId('1');
+      await bookingsPage.verifyCustomerId('1');
     });
   });
 
   test.describe('Reports Page', () => {
+    let reportsPage: ReportsPage;
+
     test.beforeEach(async ({ page }) => {
-      await page.goto('/reports');
-      await page.waitForLoadState('networkidle');
+      reportsPage = new ReportsPage(page);
+      await reportsPage.navigateToReports();
     });
 
     test('should display reports page title', async ({ page }) => {
-      await expect(page.locator('h2')).toContainText('Reports Dashboard');
+      await reportsPage.verifyPageTitle();
     });
 
     test('should display filter form elements', async ({ page }) => {
-      await expect(page.locator('#airline')).toBeVisible();
-      await expect(page.locator('#startDate')).toBeVisible();
-      await expect(page.locator('#endDate')).toBeVisible();
+      await reportsPage.verifyFilterFormElements();
     });
 
     test('should set date range filters', async ({ page }) => {
       const startDate = '2024-01-01';
       const endDate = '2024-12-31';
       
-      await page.fill('#startDate', startDate);
-      await page.fill('#endDate', endDate);
-      
-      await expect(page.locator('#startDate')).toHaveValue(startDate);
-      await expect(page.locator('#endDate')).toHaveValue(endDate);
+      await reportsPage.setDateRangeFilters(startDate, endDate);
+      await reportsPage.verifyDateRangeFilters(startDate, endDate);
     });
 
     test('should display dashboard cards', async ({ page }) => {
-      // Check if any of the overview cards are present
-      const cardTitles = await page.locator('.card-title').allTextContents();
-      expect(cardTitles.length).toBeGreaterThan(0);
+      await reportsPage.verifyDashboardCards();
     });
   });
-
-
 }); 
