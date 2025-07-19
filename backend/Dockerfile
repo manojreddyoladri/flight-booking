@@ -4,12 +4,12 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 # Set working directory
 WORKDIR /app
 
-# Copy pom.xml and src from backend directory
-COPY pom.xml .
+# Copy pom.xml and src from backend directory in the build context (project root)
+COPY backend/pom.xml .
 RUN mvn dependency:go-offline -B
 
 # Copy source code
-COPY src ./src
+COPY backend/src ./src
 
 # Build the application
 RUN mvn clean package -DskipTests
