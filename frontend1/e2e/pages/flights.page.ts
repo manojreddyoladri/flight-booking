@@ -108,7 +108,7 @@ export class FlightsPage extends BasePage {
     if (isEditing) {
       await this.updateFlightButton.click();
     } else {
-      await this.addFlightButton.click();
+    await this.addFlightButton.click();
     }
   }
 
