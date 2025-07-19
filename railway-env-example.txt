@@ -1,0 +1,11 @@
+# Railway Environment Variables Example
+# Add these in your Railway project settings
+
+SPRING_DATASOURCE_URL=jdbc:mysql://${{MySQL.HOST}}:${{MySQL.PORT}}/${{MySQL.DATABASE}}?useSSL=false&allowPublicKeyRetrieval=true
+SPRING_DATASOURCE_USERNAME=${{MySQL.USERNAME}}
+SPRING_DATASOURCE_PASSWORD=${{MySQL.PASSWORD}}
+SPRING_PROFILES_ACTIVE=production
+SERVER_PORT=8080
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_JPA_SHOW_SQL=false
+LOGGING_LEVEL_ROOT=INFO 
