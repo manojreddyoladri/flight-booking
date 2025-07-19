@@ -189,7 +189,8 @@ export class CustomersComponent implements OnInit {
   }
 
   loadCustomers() {
-    this.customerService.loadAllCustomers().subscribe({
+    this.customers$ = this.customerService.loadAllCustomers();
+    this.customers$.subscribe({
       next: () => {
         this.notificationService.showSuccess('Customers loaded successfully');
       },

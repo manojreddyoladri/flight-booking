@@ -14,6 +14,7 @@ export class FlightsPage extends BasePage {
   private flightDateInput = this.page.locator('#flightDate');
   private priceInput = this.page.locator('#price');
   private addFlightButton = this.page.locator('text=Add Flight');
+  private updateFlightButton = this.page.locator('text=Update Flight');
 
   // Locators - Page Elements
   private pageTitle = this.page.locator('h2');
@@ -103,8 +104,12 @@ export class FlightsPage extends BasePage {
   /**
    * Submit add flight form
    */
-  async submitAddFlightForm() {
-    await this.addFlightButton.click();
+  async submitAddFlightForm(isEditing = false) {
+    if (isEditing) {
+      await this.updateFlightButton.click();
+    } else {
+      await this.addFlightButton.click();
+    }
   }
 
   /**
