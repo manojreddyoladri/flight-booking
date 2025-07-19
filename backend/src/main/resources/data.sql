@@ -15,7 +15,7 @@ WHERE f.id IN (
 
 -- Initialize flights with date and price
 INSERT INTO flights (airline_name, total_seats, booked_seats, flight_date, price) VALUES
-('Delta Airlines', 150, 0, '2024-08-15', 299.99),
+('Delta Airlines', 150, 0, '2099-12-31', 299.99),
 ('American Airlines', 200, 0, '2024-08-15', 349.99),
 ('United Airlines', 180, 0, '2024-08-16', 279.99),
 ('Southwest Airlines', 175, 0, '2024-08-16', 199.99),

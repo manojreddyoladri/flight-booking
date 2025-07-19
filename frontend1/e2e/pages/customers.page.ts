@@ -9,7 +9,7 @@ export class CustomersPage extends BasePage {
 
   // Locators - Search Customer
   private searchIdInput = this.page.locator('input[placeholder="Enter Customer ID"]');
-  private searchCustomerButton = this.page.locator('text=Search Customer');
+  private searchCustomerButton = this.page.locator('button.btn-info');
 
   // Locators - Page Elements
   private pageTitle = this.page.locator('h2');
