@@ -8,6 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies for build)
+# The --omit=dev flag is intentionally left out to install Angular CLI
 RUN npm ci
 
 # Copy source code
