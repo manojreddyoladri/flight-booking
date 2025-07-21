@@ -19,10 +19,12 @@ public class BackendApplication {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
-					.allowedOrigins("http://localhost:4200")
-					.allowedMethods("*")
-					.allowedHeaders("*")
-					.allowCredentials(true);
+						.allowedOrigins(
+								"http://localhost:4200",
+								"https://terrific-renewal-production-c2b8.up.railway.app")
+						.allowedMethods("*")
+						.allowedHeaders("*")
+						.allowCredentials(true);
 			}
 		};
 	}
