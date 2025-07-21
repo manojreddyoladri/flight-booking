@@ -16,13 +16,19 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 # Set a default backend URL for local testing
 ENV ENV_BACKEND_URL="http://localhost:8080"
 
-# Robust startup command with debug output
-# Only substitute ENV_BACKEND_URL, leaving nginx variables intact
-CMD /bin/sh -c 'echo "--- Generating Nginx Config ---" && \
-    cat /etc/nginx/templates/default.conf.template | envsubst "$${ENV_BACKEND_URL}" && \
-    echo "--- Starting Nginx ---" && \
-    envsubst "$${ENV_BACKEND_URL}" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && \
-    nginx -g "daemon off;"'
+# Create a script to handle the configuration and startup
+RUN echo '#!/bin/sh\n\
+    echo "--- Generating Nginx Config ---"\n\
+    export backend_url="$ENV_BACKEND_URL"\n\
+    envsubst \'$backend_url\' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf\n\
+    echo "--- Generated Nginx Config ---"\n\
+    cat /etc/nginx/conf.d/default.conf\n\
+    echo "--- Starting Nginx ---"\n\
+    nginx -g "daemon off;"\n\
+    ' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+# Use the script as the entrypoint
+CMD ["/docker-entrypoint.sh"]
 
 # Expose port
 EXPOSE 80
