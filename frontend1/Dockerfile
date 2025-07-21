@@ -23,10 +23,17 @@ FROM nginx:alpine
 # Copy built application from build stage
 COPY --from=build /app/dist/frontend1/browser /usr/share/nginx/html
 
-# Copy nginx configuration and perform environment substitution
+# Copy nginx configuration template
 COPY nginx.conf /etc/nginx/templates/default.conf.template
-ENV ENV_BACKEND_URL=http://localhost:8080
-CMD /bin/sh -c "envsubst < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+# Set a default backend URL for local testing
+ENV ENV_BACKEND_URL="http://localhost:8080"
+
+# Robust startup command with debug output
+# 1. Print the substituted config to the log
+# 2. Generate the final config file
+# 3. Start Nginx in the foreground
+CMD /bin/sh -c 'echo "--- Generating Nginx Config ---" && cat /etc/nginx/templates/default.conf.template | envsubst && echo "--- Starting Nginx ---" && envsubst < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g "daemon off;"'
 
 # Expose port
 EXPOSE 80
