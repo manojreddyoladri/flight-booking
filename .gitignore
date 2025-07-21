@@ -30,3 +30,5 @@ playwright-report/
 *.md
 debug-*.png
 customer-add-fail.png
+
+backend/src/main/resources/application-local.properties
