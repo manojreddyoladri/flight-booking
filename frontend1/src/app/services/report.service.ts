@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment.prod';
 
 export interface DashboardStats {
   totalFlights: number;
@@ -31,12 +32,12 @@ export interface RevenueAnalysis {
   providedIn: 'root'
 })
 export class ReportService {
-  private baseUrl = 'http://localhost:8080/api/reports';
+  private baseUrl = environment.apiUrl + '/reports';
 
   constructor(private http: HttpClient) {}
 
-  getDashboardStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.baseUrl}/dashboard`).pipe(
+  getDashboardStats(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/dashboard`).pipe(
       catchError(error => {
         console.error('Error loading dashboard stats:', error);
         return throwError(() => new Error('Failed to load dashboard statistics'));
@@ -53,8 +54,8 @@ export class ReportService {
     );
   }
 
-  getAirlinePerformance(): Observable<ReportData[]> {
-    return this.http.get<ReportData[]>(`${this.baseUrl}/airline-performance`).pipe(
+  getAirlinePerformance(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/airline-performance`).pipe(
       catchError(error => {
         console.error('Error loading airline performance:', error);
         return throwError(() => new Error('Failed to load airline performance'));
@@ -62,8 +63,8 @@ export class ReportService {
     );
   }
 
-  getRevenueAnalysis(startDate: string, endDate: string): Observable<RevenueAnalysis> {
-    return this.http.get<RevenueAnalysis>(`${this.baseUrl}/revenue-analysis?startDate=${startDate}&endDate=${endDate}`).pipe(
+  getRevenueAnalysis(startDate: string, endDate: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/revenue-analysis?startDate=${startDate}&endDate=${endDate}`).pipe(
       catchError(error => {
         console.error('Error loading revenue analysis:', error);
         return throwError(() => new Error('Failed to load revenue analysis'));

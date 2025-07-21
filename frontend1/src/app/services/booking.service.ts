@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 import { Booking, BookingRequest } from '../models/booking.model';
 import { FlightService } from './flight.service';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
-  private baseUrl = 'http://localhost:8080/api/bookings';
+  private baseUrl = environment.apiUrl + '/bookings';
 
   constructor(
     private http: HttpClient,
@@ -53,10 +54,9 @@ export class BookingService {
   }
 
   cancelBooking(bookingId: number): Observable<void> {
-    console.log('Cancelling booking:', bookingId);
     return this.http.delete<void>(`${this.baseUrl}/${bookingId}`).pipe(
       catchError(error => {
-        console.error('Error cancelling booking:', error);
+        console.error('Error canceling booking:', error);
         return throwError(() => new Error('Failed to cancel booking'));
       })
     );
