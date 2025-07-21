@@ -8,6 +8,7 @@ RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
+RUN apk add --no-cache ca-certificates
 COPY --from=build /app/dist/frontend1/browser /usr/share/nginx/html
 
 # Copy nginx configuration template
