@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 import { Flight } from '../models/flight.model';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FlightService {
-  private baseUrl = 'http://localhost:8080/api/flights';
+  private baseUrl = environment.apiUrl + '/flights';
 
   constructor(private http: HttpClient) {}
 
@@ -81,8 +82,8 @@ export class FlightService {
     );
   }
 
-  checkAvailability(flightId: number): Observable<number> {
-    return this.http.get<number>(`${this.baseUrl}/${flightId}/availability`).pipe(
+  checkAvailability(id: number): Observable<number> {
+    return this.http.get<number>(`${this.baseUrl}/${id}/availability`).pipe(
       catchError(error => {
         console.error('Error checking availability:', error);
         return throwError(() => new Error('Failed to check availability'));
