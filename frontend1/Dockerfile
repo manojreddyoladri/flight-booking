@@ -20,8 +20,7 @@ ENV ENV_BACKEND_URL="http://localhost:8080"
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'echo "--- Generating Nginx Config ---"' \
-    'export backend_url="${ENV_BACKEND_URL}"' \
-    'envsubst "$backend_url" < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf' \
+    'sed "s|__BACKEND_URL__|${ENV_BACKEND_URL}|g" /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf' \
     'echo "--- Generated Nginx Config ---"' \
     'cat /etc/nginx/conf.d/default.conf' \
     'echo "--- Starting Nginx ---"' \
