@@ -13,7 +13,10 @@ import com.springboot.common.repository.CustomerRepository;
 @Service
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository repo;
-    public CustomerServiceImpl(CustomerRepository repo) { this.repo = repo; }
+
+    public CustomerServiceImpl(CustomerRepository repo) {
+        this.repo = repo;
+    }
 
     @Override
     public CustomerDTO addCustomer(CustomerDTO dto) {
@@ -25,13 +28,21 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public List<CustomerDTO> getAllCustomers() {
         return repo.findAll().stream()
-            .map(c -> new CustomerDTO(c.getId(), c.getName(), c.getEmail()))
-            .collect(Collectors.toList());
+                .map(c -> new CustomerDTO(c.getId(), c.getName(), c.getEmail()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Optional<CustomerDTO> getCustomerById(Long id) {
         return repo.findById(id)
-                   .map(c -> new CustomerDTO(c.getId(), c.getName(), c.getEmail()));
+                .map(c -> new CustomerDTO(c.getId(), c.getName(), c.getEmail()));
+    }
+
+    @Override
+    public void deleteCustomer(Long id) {
+        if (!repo.existsById(id)) {
+            throw new RuntimeException("Customer not found");
+        }
+        repo.deleteById(id);
     }
 }
