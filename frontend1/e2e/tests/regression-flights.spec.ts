@@ -117,15 +117,25 @@ test.describe('Regression: Flight Management', () => {
     await cleanupTestFlights(request, [], workerIndex);
   });
 
-  test('should load flights page and display seeded flight', async ({ page }) => {
+  test('should load flights page and display seeded flight', async ({ page }, testInfo) => {
     const flightsPage = new FlightsPage(page);
+    const data = getUniqueFlightData(testInfo.workerIndex, 0);
+    
     await flightsPage.navigateToFlights();
     await waitForLoadingToFinish(page);
     await flightsPage.verifyPageTitle();
     
-    // Wait for table to load
+    // Create a future flight first so there's something to display
+    await flightsPage.addFlight(data.airlineName, data.totalSeats, data.flightDate, data.price);
+    await waitForLoadingToFinish(page);
+    
+    // Wait for table to load and verify the created flight appears
     await waitForElementWithRetry(page, 'tbody tr');
-    await expect(page.locator('tr', { hasText: 'Delta Airlines' })).toBeVisible();
+    await expect(page.locator('tr', { hasText: data.airlineName })).toBeVisible();
+    
+    // Also verify that the page loads correctly with flights
+    const formattedDate = formatDateToShortDate(data.flightDate);
+    await expect(page.locator('tr', { hasText: data.airlineName }).filter({ hasText: formattedDate })).toBeVisible();
   });
 
   test('should add a new flight and verify it appears in the table', async ({ page }, testInfo) => {
@@ -296,6 +306,9 @@ test.describe('Regression: Flight Management', () => {
     expect(flightId).toBeDefined();
 
     // Click Edit for that row
+    if (!newRow) {
+      throw new Error('Flight row not found for editing');
+    }
     await newRow.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByLabel('Airline Name')).toBeVisible();
     await waitForLoadingToFinish(page);
