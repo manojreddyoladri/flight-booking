@@ -7,6 +7,10 @@ import com.springboot.common.dto.CustomerDTO;
 
 public interface CustomerService {
     CustomerDTO addCustomer(CustomerDTO dto);
+
     List<CustomerDTO> getAllCustomers();
+
     Optional<CustomerDTO> getCustomerById(Long id);
+
+    void deleteCustomer(Long id);
 }

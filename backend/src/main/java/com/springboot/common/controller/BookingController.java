@@ -19,7 +19,10 @@ import com.springboot.common.service.BookingService;
 @RequestMapping("/api/bookings")
 public class BookingController {
     private final BookingService service;
-    public BookingController(BookingService service) { this.service = service; }
+
+    public BookingController(BookingService service) {
+        this.service = service;
+    }
 
     @PostMapping
     public ResponseEntity<BookingDTO> book(@RequestBody BookingRequestDTO req) {
@@ -31,7 +34,7 @@ public class BookingController {
     public ResponseEntity<List<BookingDTO>> byCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(service.getBookingsByCustomer(customerId));
     }
-    
+
     @GetMapping
     public ResponseEntity<List<BookingDTO>> getAllBookings() {
         List<BookingDTO> all = service.findAllBookings();
@@ -43,5 +46,10 @@ public class BookingController {
         service.cancelBooking(id);
         return ResponseEntity.noContent().build();
     }
-}
 
+    @DeleteMapping("/all")
+    public ResponseEntity<Void> cancelAll() {
+        service.cancelAllBookings();
+        return ResponseEntity.noContent().build();
+    }
+}

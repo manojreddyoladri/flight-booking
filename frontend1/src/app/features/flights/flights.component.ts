@@ -71,6 +71,7 @@ export class FlightsComponent implements OnInit {
       if (this.isEditing && this.editingFlightId) {
         this.flightStore.updateFlightEffect({ id: this.editingFlightId, flight: flightData });
         this.notificationService.showSuccess('Flight updated successfully!');
+        this.refreshFlights(); // Ensure UI is up-to-date after update
       } else {
         this.flightStore.addFlightEffect(flightData);
         this.notificationService.showSuccess('Flight added successfully!');

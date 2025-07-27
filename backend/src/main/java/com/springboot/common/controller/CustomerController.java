@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,13 +19,16 @@ import com.springboot.common.service.CustomerService;
 @RequestMapping("/api/customers")
 public class CustomerController {
     private final CustomerService service;
-    public CustomerController(CustomerService service) { this.service = service; }
+
+    public CustomerController(CustomerService service) {
+        this.service = service;
+    }
 
     @PostMapping
     public ResponseEntity<CustomerDTO> add(@RequestBody CustomerDTO dto) {
         CustomerDTO created = service.addCustomer(dto);
         return ResponseEntity.created(URI.create("/api/customers/" + created.getId()))
-                             .body(created);
+                .body(created);
     }
 
     @GetMapping
@@ -35,7 +39,13 @@ public class CustomerController {
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDTO> getById(@PathVariable Long id) {
         return service.getCustomerById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        service.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
     }
 }

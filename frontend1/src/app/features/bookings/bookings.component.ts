@@ -76,6 +76,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
   }
 
   onDateChange() {
+    console.log('onDateChange called with:', this.selectedDate);
     if (this.selectedDate) {
       this.loadFlightsByDate(this.selectedDate);
       // Reset flight selection when date changes
@@ -86,6 +87,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
   }
 
   private loadFlightsByDate(date: string) {
+    console.log('loadFlightsByDate called with:', date);
     // Only load flights if the selected date is today or in the future
     const selectedDate = new Date(date);
     const today = new Date();
