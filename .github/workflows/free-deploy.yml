@@ -66,7 +66,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.RAILWAY_TOKEN == ''
         run: echo "Skipping Railway deployment - RAILWAY_TOKEN not configured"
 
-  # Frontend CI/CD (Vercel)
+  # Frontend CI/CD
   frontend:
     name: Frontend - Build, Test & Deploy
     runs-on: ubuntu-latest
@@ -124,19 +124,6 @@ jobs:
           name: playwright-report
           path: frontend1/playwright-report/
           retention-days: 30
-
-      - name: Deploy to Vercel
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./frontend1
-
-      - name: Skip Vercel deployment (no token)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.VERCEL_TOKEN == ''
-        run: echo "Skipping Vercel deployment - VERCEL_TOKEN not configured"
 
   # Integration Tests
   integration:
