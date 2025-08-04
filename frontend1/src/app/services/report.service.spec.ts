@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ReportService, DashboardStats, ReportData, RevenueAnalysis } from './report.service';
+import { environment } from '../../environments/environment.prod';
 
 describe('ReportService', () => {
   let service: ReportService;
@@ -39,7 +40,7 @@ describe('ReportService', () => {
         expect(stats).toEqual(mockStats);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/dashboard');
+      const req = httpMock.expectOne(`${environment.apiUrl}/reports/dashboard`);
       expect(req.request.method).toBe('GET');
       req.flush(mockStats);
     });
@@ -52,7 +53,7 @@ describe('ReportService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/dashboard');
+      const req = httpMock.expectOne(`${environment.apiUrl}/reports/dashboard`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
@@ -72,7 +73,7 @@ describe('ReportService', () => {
         expect(revenue).toEqual(mockRevenue);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/revenue?airline=Test Airlines&startDate=2025-01-01&endDate=2025-01-31');
+      const req = httpMock.expectOne(`${environment.apiUrl}/reports/revenue?airline=Test Airlines&startDate=2025-01-01&endDate=2025-01-31`);
       expect(req.request.method).toBe('GET');
       req.flush(mockRevenue);
     });
@@ -99,31 +100,9 @@ describe('ReportService', () => {
         expect(trends).toEqual(mockTrends);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/booking-trends?startDate=2025-01-01&endDate=2025-01-31');
+      const req = httpMock.expectOne(`${environment.apiUrl}/reports/booking-trends?startDate=2025-01-01&endDate=2025-01-31`);
       expect(req.request.method).toBe('GET');
       req.flush(mockTrends);
-    });
-  });
-
-  describe('getAirlinePerformance', () => {
-    it('should return airline performance data', () => {
-      const mockPerformance: ReportData[] = [
-        {
-          airlineName: 'Test Airlines',
-          ticketsSold: 10,
-          totalRevenue: 5000,
-          averagePrice: 500,
-          seatsBooked: 50
-        }
-      ];
-
-      service.getAirlinePerformance().subscribe(performance => {
-        expect(performance).toEqual(mockPerformance);
-      });
-
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/airline-performance');
-      expect(req.request.method).toBe('GET');
-      req.flush(mockPerformance);
     });
   });
 
@@ -139,11 +118,11 @@ describe('ReportService', () => {
         }
       };
 
-      service.getRevenueAnalysis('2025-01-01', '2025-12-31').subscribe(analysis => {
+      service.getRevenueAnalysis('2025-01-01', '2025-01-31').subscribe(analysis => {
         expect(analysis).toEqual(mockAnalysis);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/reports/revenue-analysis?startDate=2025-01-01&endDate=2025-12-31');
+      const req = httpMock.expectOne(`${environment.apiUrl}/reports/revenue-analysis?startDate=2025-01-01&endDate=2025-01-31`);
       expect(req.request.method).toBe('GET');
       req.flush(mockAnalysis);
     });

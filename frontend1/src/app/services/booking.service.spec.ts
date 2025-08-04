@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { BookingService } from './booking.service';
 import { FlightService } from './flight.service';
+import { environment } from '../../environments/environment.prod';
 
 describe('BookingService', () => {
   let service: BookingService;
@@ -53,7 +54,7 @@ describe('BookingService', () => {
         expect(bookings).toEqual(mockBookings);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       expect(req.request.method).toBe('GET');
       req.flush(mockBookings);
     });
@@ -66,7 +67,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
@@ -77,7 +78,7 @@ describe('BookingService', () => {
         expect(booking).toEqual(mockBooking);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockBookingRequest);
       req.flush(mockBooking);
@@ -91,7 +92,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
 
@@ -103,7 +104,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       req.flush('Bad request', { status: 400, statusText: 'Bad Request' });
     });
 
@@ -115,7 +116,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings`);
       req.flush('Not found', { status: 404, statusText: 'Not Found' });
     });
   });
@@ -128,7 +129,7 @@ describe('BookingService', () => {
         expect(bookings).toEqual(mockBookings);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings/customer/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings/customer/1`);
       expect(req.request.method).toBe('GET');
       req.flush(mockBookings);
     });
@@ -141,7 +142,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings/customer/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings/customer/1`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
@@ -152,7 +153,7 @@ describe('BookingService', () => {
         expect().nothing();
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings/1`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -165,7 +166,7 @@ describe('BookingService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/bookings/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/bookings/1`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });

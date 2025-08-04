@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { CustomerService } from './customer.service';
+import { environment } from '../../environments/environment.prod';
 
 describe('CustomerService', () => {
   let service: CustomerService;
@@ -29,6 +30,32 @@ describe('CustomerService', () => {
     expect(service).toBeTruthy();
   });
 
+  describe('loadAllCustomers', () => {
+    it('should return all customers', () => {
+      const mockCustomers = [mockCustomer];
+
+      service.loadAllCustomers().subscribe(customers => {
+        expect(customers).toEqual(mockCustomers);
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockCustomers);
+    });
+
+    it('should handle error when API fails', () => {
+      service.loadAllCustomers().subscribe({
+        next: () => fail('should have failed'),
+        error: (error: any) => {
+          expect(error.message).toBe('Failed to load customers');
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers`);
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+    });
+  });
+
   describe('createCustomer', () => {
     it('should create a new customer', () => {
       const newCustomer = {
@@ -40,7 +67,7 @@ describe('CustomerService', () => {
         expect(customer).toEqual(mockCustomer);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/customers');
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(newCustomer);
       req.flush(mockCustomer);
@@ -59,7 +86,7 @@ describe('CustomerService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/customers');
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
@@ -70,7 +97,7 @@ describe('CustomerService', () => {
         expect(customer).toEqual(mockCustomer);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/customers/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers/1`);
       expect(req.request.method).toBe('GET');
       req.flush(mockCustomer);
     });
@@ -83,34 +110,8 @@ describe('CustomerService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/customers/999');
+      const req = httpMock.expectOne(`${environment.apiUrl}/customers/999`);
       req.flush('Not found', { status: 404, statusText: 'Not Found' });
-    });
-  });
-
-  describe('loadAllCustomers', () => {
-    it('should return all customers', () => {
-      const mockCustomers = [mockCustomer];
-
-      service.loadAllCustomers().subscribe(customers => {
-        expect(customers).toEqual(mockCustomers);
-      });
-
-      const req = httpMock.expectOne('http://localhost:8080/api/customers');
-      expect(req.request.method).toBe('GET');
-      req.flush(mockCustomers);
-    });
-
-    it('should handle error when API fails', () => {
-      service.loadAllCustomers().subscribe({
-        next: () => fail('should have failed'),
-        error: (error: any) => {
-          expect(error.message).toBe('Failed to load customers');
-        }
-      });
-
-      const req = httpMock.expectOne('http://localhost:8080/api/customers');
-      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
 }); 

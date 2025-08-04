@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { FlightService } from './flight.service';
 import { Flight } from '../models/flight.model';
+import { environment } from '../../environments/environment.prod';
 
 describe('FlightService', () => {
   let service: FlightService;
@@ -41,7 +42,7 @@ describe('FlightService', () => {
         expect(flights).toEqual(mockFlights);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights`);
       expect(req.request.method).toBe('GET');
       req.flush(mockFlights);
     });
@@ -54,7 +55,7 @@ describe('FlightService', () => {
         }
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
@@ -68,7 +69,7 @@ describe('FlightService', () => {
         expect(flights).toEqual(mockFlights);
       });
 
-      const req = httpMock.expectOne(`http://localhost:8080/api/flights/by-date?date=${date}`);
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/by-date?date=${date}`);
       expect(req.request.method).toBe('GET');
       req.flush(mockFlights);
     });
@@ -83,7 +84,7 @@ describe('FlightService', () => {
         expect(flights).toEqual(mockFlights);
       });
 
-      const req = httpMock.expectOne(`http://localhost:8080/api/flights/future?fromDate=${fromDate}`);
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/future?fromDate=${fromDate}`);
       expect(req.request.method).toBe('GET');
       req.flush(mockFlights);
     });
@@ -97,7 +98,7 @@ describe('FlightService', () => {
         expect(flights).toEqual(mockFlights);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights/future-today');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/future-today`);
       expect(req.request.method).toBe('GET');
       req.flush(mockFlights);
     });
@@ -105,31 +106,71 @@ describe('FlightService', () => {
 
   describe('addFlight', () => {
     it('should create a new flight', () => {
-      const newFlight: Flight = { ...mockFlight, id: 0 };
+      const newFlight = {
+        airlineName: 'New Airlines',
+        totalSeats: 200,
+        availableSeats: 150,
+        flightDate: '2025-02-01',
+        price: 399.99
+      };
 
-      service.addFlight(newFlight).subscribe(flight => {
-        expect(flight).toEqual(mockFlight);
+      service.addFlight(newFlight as Flight).subscribe(flight => {
+        expect(flight).toEqual({ ...newFlight, id: 2 });
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(newFlight);
-      req.flush(mockFlight);
+      req.flush({ ...newFlight, id: 2 });
+    });
+
+    it('should handle error when creation fails', () => {
+      const newFlight = {
+        airlineName: 'New Airlines',
+        totalSeats: 200,
+        availableSeats: 150,
+        flightDate: '2025-02-01',
+        price: 399.99
+      };
+
+      service.addFlight(newFlight as Flight).subscribe({
+        next: () => fail('should have failed'),
+        error: (error: any) => {
+          expect(error.message).toBe('Failed to add flight');
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights`);
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
 
   describe('updateFlight', () => {
     it('should update an existing flight', () => {
-      const updatedFlight = { ...mockFlight, price: 399.99 };
+      const updatedFlight = { ...mockFlight, price: 350.00 };
 
       service.updateFlight(1, updatedFlight).subscribe(flight => {
         expect(flight).toEqual(updatedFlight);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(updatedFlight);
       req.flush(updatedFlight);
+    });
+
+    it('should handle error when update fails', () => {
+      const updatedFlight = { ...mockFlight, price: 350.00 };
+
+      service.updateFlight(1, updatedFlight).subscribe({
+        next: () => fail('should have failed'),
+        error: (error: any) => {
+          expect(error.message).toBe('Failed to update flight');
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1`);
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
 
@@ -139,21 +180,45 @@ describe('FlightService', () => {
         expect().nothing();
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights/1');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
+    });
+
+    it('should handle error when deletion fails', () => {
+      service.deleteFlight(1).subscribe({
+        next: () => fail('should have failed'),
+        error: (error: any) => {
+          expect(error.message).toBe('Failed to delete flight');
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1`);
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
 
   describe('checkAvailability', () => {
-    it('should check seat availability for a flight', () => {
-      service.checkAvailability(1).subscribe(availability => {
-        expect(availability).toBe(100);
+    it('should return available seats for a flight', () => {
+      service.checkAvailability(1).subscribe(availableSeats => {
+        expect(availableSeats).toBe(100);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights/1/availability');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1/availability`);
       expect(req.request.method).toBe('GET');
       req.flush(100);
+    });
+
+    it('should handle error when checking availability fails', () => {
+      service.checkAvailability(1).subscribe({
+        next: () => fail('should have failed'),
+        error: (error: any) => {
+          expect(error.message).toBe('Failed to check availability');
+        }
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights/1/availability`);
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
   });
 
@@ -165,7 +230,7 @@ describe('FlightService', () => {
         expect(flights).toEqual(mockFlights);
       });
 
-      const req = httpMock.expectOne('http://localhost:8080/api/flights');
+      const req = httpMock.expectOne(`${environment.apiUrl}/flights`);
       expect(req.request.method).toBe('GET');
       req.flush(mockFlights);
     });
