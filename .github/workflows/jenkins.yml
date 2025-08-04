@@ -1,0 +1,94 @@
+name: Jenkins Pipeline
+
+on:
+  push:
+    branches: [main, jenkins-integration]
+  pull_request:
+    branches: [main]
+
+jobs:
+  jenkins-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend1/package-lock.json
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Jenkins Pipeline
+        uses: jenkinsci/jenkinsfile-runner-action@v0.8.0
+        with:
+          jenkinsfile: Jenkinsfile
+          jenkins_home: /tmp/jenkins_home
+          plugins_txt: |
+            pipeline:latest
+            git:latest
+            docker-workflow:latest
+            htmlpublisher:latest
+            email-ext:latest
+            credentials-binding:latest
+            workspace-cleanup:latest
+            timestamper:latest
+            build-timeout:latest
+            parameterized-trigger:latest
+            matrix-project:latest
+            conditional-buildstep:latest
+            config-file-provider:latest
+            copyartifact:latest
+            envinject:latest
+            extended-choice-parameter:latest
+            git-parameter:latest
+            groovy:latest
+            job-dsl:latest
+            pipeline-utility-steps:latest
+            script-security:latest
+            ssh-credentials:latest
+            ssh-steps:latest
+            workflow-aggregator:latest
+            workflow-cps:latest
+            workflow-durable-task-step:latest
+            workflow-job:latest
+            workflow-multibranch:latest
+            workflow-scm-step:latest
+            workflow-step-api:latest
+            workflow-support:latest
+        env:
+          # Set environment variables for the pipeline
+          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+          NODE_HOME: /usr/local/bin/node
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            backend/target/surefire-reports/
+            frontend1/playwright-report/
+            frontend1/test-results/
+          retention-days: 30
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-artifacts
+          path: |
+            backend/target/*.jar
+            frontend1/dist/
+          retention-days: 30
