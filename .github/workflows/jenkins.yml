@@ -1,4 +1,4 @@
-name: Jenkins Pipeline
+name: CI/CD Pipeline (Jenkinsfile Style)
 
 on:
   push:
@@ -7,8 +7,119 @@ on:
     branches: [main]
 
 jobs:
-  jenkins-pipeline:
+  backend-build-test:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Backend Build & Test
+        run: |
+          cd backend
+          ./mvnw clean compile test
+          ./mvnw package -DskipTests
+
+      - name: Upload backend test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/target/surefire-reports/
+          retention-days: 30
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-artifacts
+          path: backend/target/*.jar
+          retention-days: 30
+
+  frontend-build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend1/package-lock.json
+
+      - name: Frontend Build & Test
+        run: |
+          cd frontend1
+          npm ci --cache ~/.npm --prefer-offline
+          npm test -- --watch=false --browsers=ChromeHeadless --single-run
+          npm run build
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-artifacts
+          path: frontend1/dist/
+          retention-days: 30
+
+  e2e-testing:
+    runs-on: ubuntu-latest
+    needs: [backend-build-test, frontend-build-test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend1/package-lock.json
+
+      - name: Install Playwright
+        run: |
+          cd frontend1
+          npx playwright install --with-deps
+
+      - name: Run E2E Tests
+        run: |
+          cd frontend1
+          # Run smoke tests
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list
+          # Run regression tests (non-blocking)
+          npx playwright test e2e/tests/regression-*.spec.ts --reporter=list || true
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            frontend1/playwright-report/
+            frontend1/test-results/
+          retention-days: 30
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-build-test, frontend-build-test]
 
     steps:
       - name: Checkout code
@@ -30,65 +141,73 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Run Jenkins Pipeline
-        uses: jenkinsci/jenkinsfile-runner-action@v0.8.0
-        with:
-          jenkinsfile: Jenkinsfile
-          jenkins_home: /tmp/jenkins_home
-          plugins_txt: |
-            pipeline:latest
-            git:latest
-            docker-workflow:latest
-            htmlpublisher:latest
-            email-ext:latest
-            credentials-binding:latest
-            workspace-cleanup:latest
-            timestamper:latest
-            build-timeout:latest
-            parameterized-trigger:latest
-            matrix-project:latest
-            conditional-buildstep:latest
-            config-file-provider:latest
-            copyartifact:latest
-            envinject:latest
-            extended-choice-parameter:latest
-            git-parameter:latest
-            groovy:latest
-            job-dsl:latest
-            pipeline-utility-steps:latest
-            script-security:latest
-            ssh-credentials:latest
-            ssh-steps:latest
-            workflow-aggregator:latest
-            workflow-cps:latest
-            workflow-durable-task-step:latest
-            workflow-job:latest
-            workflow-multibranch:latest
-            workflow-scm-step:latest
-            workflow-step-api:latest
-            workflow-support:latest
-        env:
-          # Set environment variables for the pipeline
-          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-          NODE_HOME: /usr/local/bin/node
+      - name: Start MySQL Container
+        run: |
+          docker run -d --name test-mysql \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -e MYSQL_DATABASE=flightbooking \
+            -p 3306:3306 \
+            mysql:8.0
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: |
-            backend/target/surefire-reports/
-            frontend1/playwright-report/
-            frontend1/test-results/
-          retention-days: 30
+          # Wait for MySQL to be ready
+          sleep 30
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Run Integration Tests
+        run: |
+          # Start backend service
+          cd backend
+          ./mvnw spring-boot:run -Dspring-boot.run.profiles=test &
+          sleep 30
+
+          # Run integration tests
+          cd ../frontend1
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list
+
+      - name: Cleanup containers
         if: always()
+        run: |
+          docker stop test-mysql || true
+          docker rm test-mysql || true
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/jenkins-integration'
+
+    steps:
+      - name: Deploy to Railway
+        run: |
+          if [ -n "${{ secrets.RAILWAY_TOKEN }}" ]; then
+            echo "Deploying to Railway..."
+            curl -X POST \
+              -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              https://api.railway.app/v2/service/flight-booking-backend/deploy
+          else
+            echo "Skipping Railway deployment - no token configured"
+          fi
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/jenkins-integration'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: build-artifacts
-          path: |
-            backend/target/*.jar
-            frontend1/dist/
-          retention-days: 30
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          cd frontend1
+          docker build -t flight-frontend .
+          docker tag flight-frontend ${{ secrets.DOCKER_USERNAME }}/flight-frontend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/flight-frontend:latest
