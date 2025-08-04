@@ -4,10 +4,6 @@ pipeline {
     environment {
         JAVA_VERSION = '17'
         NODE_VERSION = '18'
-        // Use free Docker images to avoid licensing costs
-        MAVEN_IMAGE = 'maven:3.9.6-eclipse-temurin-17'
-        NODE_IMAGE = 'node:18-alpine'
-        PLAYWRIGHT_IMAGE = 'mcr.microsoft.com/playwright:v1.53.2'
     }
     
     options {
@@ -37,12 +33,6 @@ pipeline {
         }
         
         stage('Backend Build & Test') {
-            agent {
-                docker {
-                    image env.MAVEN_IMAGE
-                    args '-v $HOME/.m2:/root/.m2 -v $HOME/.m2:/root/.m2'
-                }
-            }
             steps {
                 dir('backend') {
                     // Use Maven wrapper to avoid installation costs
@@ -68,12 +58,6 @@ pipeline {
         }
         
         stage('Frontend Build & Test') {
-            agent {
-                docker {
-                    image env.NODE_IMAGE
-                    args '-v $HOME/.npm:/root/.npm'
-                }
-            }
             steps {
                 dir('frontend1') {
                     // Use npm ci for faster, reliable installs
@@ -101,12 +85,6 @@ pipeline {
         }
         
         stage('E2E Testing') {
-            agent {
-                docker {
-                    image env.PLAYWRIGHT_IMAGE
-                    args '-v $HOME/.npm:/root/.npm'
-                }
-            }
             steps {
                 dir('frontend1') {
                     // Install Playwright browsers (free)
@@ -144,12 +122,6 @@ pipeline {
         }
         
         stage('Integration Tests') {
-            agent {
-                docker {
-                    image env.NODE_IMAGE
-                    args '-v $HOME/.npm:/root/.npm'
-                }
-            }
             environment {
                 // Use free MySQL container for testing
                 MYSQL_ROOT_PASSWORD = 'root'
@@ -194,7 +166,7 @@ pipeline {
         
         stage('Deploy Backend (Railway)') {
             when {
-                branch 'main'
+                branch 'jenkins-integration'
             }
             steps {
                 script {
@@ -218,12 +190,7 @@ pipeline {
         
         stage('Deploy Frontend (Docker)') {
             when {
-                branch 'main'
-            }
-            agent {
-                docker {
-                    image env.NODE_IMAGE
-                }
+                branch 'jenkins-integration'
             }
             steps {
                 dir('frontend1') {
