@@ -6,6 +6,8 @@ pipeline {
         NODE_VERSION = '18'
     }
     
+    // GitHub Actions Integration - Zero Cost CI/CD Pipeline
+    
     options {
         // Prevent multiple builds of the same commit
         skipDefaultCheckout(false)
