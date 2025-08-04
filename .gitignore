@@ -12,15 +12,8 @@ dist/
 
 # Deployment documentation (keep local only)
 DEPLOYMENT.md
-AZURE-DEPLOYMENT.md
 FREE-DEPLOYMENT.md
-azure-deploy.ps1
 setup-free-deployment.sh
-
-# Azure deployment files (keep local only)
-azure-deploy.yml
-azure-app-service-config.json
-azure-static-web-apps-config.json
 
 # Test artifacts and reports
 test-results/
