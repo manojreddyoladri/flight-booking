@@ -13,8 +13,6 @@ pipeline {
     options {
         // Prevent multiple builds of the same commit
         skipDefaultCheckout(false)
-        // Clean workspace after build
-        cleanWs()
         // Timeout to prevent runaway builds
         timeout(time: 1, unit: 'HOURS')
     }
@@ -249,9 +247,6 @@ pipeline {
     
     post {
         always {
-            // Clean workspace to save storage costs
-            cleanWs()
-            
             // Free notification via email
             emailext (
                 subject: "Pipeline ${currentBuild.result}: ${currentBuild.fullDisplayName}",
@@ -264,8 +259,7 @@ pipeline {
                     <p><a href="${env.BUILD_URL}">View Build Details</a></p>
                 """,
                 to: 'team@yourcompany.com',
-                attachLog: true,
-                compressAttachments: true
+                attachLog: true
             )
         }
         success {
