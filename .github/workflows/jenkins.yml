@@ -94,6 +94,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend1/package-lock.json
 
+      - name: Install dependencies
+        run: |
+          cd frontend1
+          npm ci
+
       - name: Install Playwright
         run: |
           cd frontend1
@@ -137,6 +142,11 @@ jobs:
           node-version: "18"
           cache: "npm"
           cache-dependency-path: frontend1/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend1
+          npm ci
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
