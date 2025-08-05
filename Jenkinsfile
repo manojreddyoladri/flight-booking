@@ -15,10 +15,8 @@ pipeline {
         timeout(time: 1, unit: 'HOURS')
     }
     
-    triggers {
-        // Poll SCM every 5 minutes (free alternative to webhooks)
-        pollSCM('*/5 * * * *')
-    }
+    // GitHub Actions Integration - Jenkinsfile Runner Pipeline
+    // Triggers are handled by GitHub Actions, not Jenkins polling
     
     stages {
         stage('Checkout') {
