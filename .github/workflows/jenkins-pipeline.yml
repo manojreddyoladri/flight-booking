@@ -55,12 +55,20 @@ jobs:
           echo "Building classpath..."
           CLASSPATH="lib/setup/setup.jar:lib/payload/payload.jar"
 
+          # Check if picocli JAR exists
+          echo "Checking for picocli JAR..."
+          ls -la repo/info/picocli/picocli/4.7.1/ || echo "picocli directory not found"
+
           # Add all JAR files from repo directory
           for jar in $(find repo -name "*.jar"); do
             CLASSPATH="$CLASSPATH:$jar"
+            echo "Added to classpath: $jar"
           done
 
-          echo "Classpath: $CLASSPATH"
+          echo "Final classpath: $CLASSPATH"
+
+          # Verify picocli is in classpath
+          echo "$CLASSPATH" | tr ':' '\n' | grep picocli || echo "picocli not found in classpath"
 
           # Run with correct options based on help output
           java -cp "$CLASSPATH" \
