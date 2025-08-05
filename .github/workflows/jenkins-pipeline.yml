@@ -51,13 +51,24 @@ jobs:
 
       - name: Run Jenkins Pipeline
         run: |
+          # Build classpath with all required JAR files
+          echo "Building classpath..."
+          CLASSPATH="lib/setup/setup.jar:lib/payload/payload.jar"
+
+          # Add all JAR files from repo directory
+          for jar in $(find repo -name "*.jar"); do
+            CLASSPATH="$CLASSPATH:$jar"
+          done
+
+          echo "Classpath: $CLASSPATH"
+
           # First check available options
           echo "Checking available options..."
-          java -cp "lib/setup/setup.jar:lib/payload/payload.jar:repo/io/jenkins/jenkinsfile-runner/bootstrap/1.0-beta-32/bootstrap-1.0-beta-32.jar:repo/info/picocli/picocli/4.7.1/picocli-4.7.1.jar:$(find repo -name "*.jar" | tr '\n' ':')" \
+          java -cp "$CLASSPATH" \
             io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap --help || echo "Help command failed, trying with basic options"
 
           # Run with basic options that should work
-          java -cp "lib/setup/setup.jar:lib/payload/payload.jar:repo/io/jenkins/jenkinsfile-runner/bootstrap/1.0-beta-32/bootstrap-1.0-beta-32.jar:repo/info/picocli/picocli/4.7.1/picocli-4.7.1.jar:$(find repo -name "*.jar" | tr '\n' ':')" \
+          java -cp "$CLASSPATH" \
             io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap \
             --jenkins-war jenkins.war \
             --jenkinsHome . \
