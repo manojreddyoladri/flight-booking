@@ -64,7 +64,7 @@ pipeline {
                     sh 'npm ci --cache ~/.npm --prefer-offline'
                     
                     // Run unit tests
-                    sh 'npm test -- --watch=false --browsers=ChromeHeadless --single-run'
+                    sh 'npm test -- --watch=false --browsers=ChromeHeadless'
                     
                     // Build production bundle
                     sh 'npm run build'
@@ -174,20 +174,18 @@ pipeline {
             }
             steps {
                 script {
-                    // Use free Railway deployment
-                    withCredentials([string(credentialsId: 'RAILWAY_TOKEN', variable: 'RAILWAY_TOKEN')]) {
-                        sh '''
-                            if [ -n "$RAILWAY_TOKEN" ]; then
-                                echo "Deploying to Railway..."
-                                curl -X POST \
-                                    -H "Authorization: Bearer $RAILWAY_TOKEN" \
-                                    -H "Content-Type: application/json" \
-                                    https://api.railway.app/v2/service/flight-booking-backend/deploy
-                            else
-                                echo "Skipping Railway deployment - no token configured"
-                            fi
-                        '''
-                    }
+                    // Use GitHub Actions secrets for Railway deployment
+                    sh '''
+                        if [ -n "$RAILWAY_TOKEN" ]; then
+                            echo "Deploying to Railway..."
+                            curl -X POST \
+                                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                                -H "Content-Type: application/json" \
+                                https://api.railway.app/v2/service/flight-booking-backend/deploy
+                        else
+                            echo "Skipping Railway deployment - no token configured"
+                        fi
+                    '''
                 }
             }
         }
@@ -202,15 +200,13 @@ pipeline {
                     sh 'docker build -t flight-frontend .'
                     
                     // Tag for registry (use free Docker Hub)
-                    sh 'docker tag flight-frontend your-username/flight-frontend:latest'
+                    sh 'docker tag flight-frontend $DOCKER_USERNAME/flight-frontend:latest'
                     
                     // Push to registry (free tier available)
-                    withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh '''
-                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                            docker push your-username/flight-frontend:latest
-                        '''
-                    }
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push $DOCKER_USERNAME/flight-frontend:latest
+                    '''
                 }
             }
         }

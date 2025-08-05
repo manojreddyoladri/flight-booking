@@ -56,14 +56,14 @@ jobs:
         continue-on-error: true
 
       - name: Deploy to Railway (Backend)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.RAILWAY_TOKEN != ''
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && ${{ secrets.RAILWAY_TOKEN != '' }}
         uses: railway/deploy@v1.0.0
         with:
           service: flight-booking-backend
           token: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Skip Railway deployment (no token)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.RAILWAY_TOKEN == ''
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && ${{ secrets.RAILWAY_TOKEN == '' }}
         run: echo "Skipping Railway deployment - RAILWAY_TOKEN not configured"
 
   # Frontend CI/CD
