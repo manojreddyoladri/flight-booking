@@ -62,17 +62,13 @@ jobs:
 
           echo "Classpath: $CLASSPATH"
 
-          # First check available options
-          echo "Checking available options..."
-          java -cp "$CLASSPATH" \
-            io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap --help || echo "Help command failed, trying with basic options"
-
-          # Run with basic options that should work
+          # Run with correct options based on help output
           java -cp "$CLASSPATH" \
             io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap \
-            --jenkins-war jenkins.war \
-            --jenkinsHome . \
-            --jenkinsfile Jenkinsfile
+            --w jenkins.war \
+            --runHome . \
+            --file Jenkinsfile \
+            run
         env:
           # Set environment variables for the pipeline
           JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
