@@ -104,6 +104,17 @@ jobs:
           cd frontend1
           npx playwright install --with-deps
 
+      - name: Build Frontend
+        run: |
+          cd frontend1
+          npm run build
+
+      - name: Start Frontend Server
+        run: |
+          cd frontend1
+          npx serve -l 4200 dist &
+          sleep 10
+
       - name: Run E2E Tests
         run: |
           cd frontend1
@@ -152,6 +163,17 @@ jobs:
         run: |
           cd frontend1
           npx playwright install --with-deps
+
+      - name: Build Frontend
+        run: |
+          cd frontend1
+          npm run build
+
+      - name: Start Frontend Server
+        run: |
+          cd frontend1
+          npx serve -l 4200 dist &
+          sleep 10
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
