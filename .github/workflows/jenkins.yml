@@ -123,11 +123,11 @@ jobs:
           sleep 5
           curl -f http://localhost:4200 || echo "Server still not ready"
 
-          # Run smoke tests with detailed output
-          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=60000
+          # Run smoke tests with detailed output and 4 workers
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=60000 --workers=4
 
-          # Run regression tests (non-blocking)
-          npx playwright test e2e/tests/regression-*.spec.ts --reporter=list --timeout=60000 || true
+          # Run regression tests (non-blocking) with 4 workers
+          npx playwright test e2e/tests/regression-*.spec.ts --reporter=list --timeout=60000 --workers=4 || true
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
@@ -202,9 +202,9 @@ jobs:
           ./mvnw spring-boot:run -Dspring-boot.run.profiles=test &
           sleep 30
 
-          # Run integration tests
+          # Run integration tests with 4 workers
           cd ../frontend1
-          npx playwright test e2e/tests/smoke.spec.ts --reporter=list
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --workers=4
 
       - name: Cleanup containers
         if: always()

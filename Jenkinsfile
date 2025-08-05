@@ -95,10 +95,10 @@ pipeline {
                     sh 'sleep 30'
                     
                     // Run smoke tests (critical path only to save time/cost)
-                    sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list'
+                    sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --workers=4'
                     
                     // Run regression tests (non-blocking to avoid failures)
-                    sh 'npx playwright test e2e/tests/regression-*.spec.ts --reporter=list || true'
+                    sh 'npx playwright test e2e/tests/regression-*.spec.ts --reporter=list --workers=4 || true'
                 }
             }
             post {
@@ -155,7 +155,7 @@ pipeline {
                     
                     // Run integration tests
                     dir('frontend1') {
-                        sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list'
+                        sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --workers=4'
                     }
                 }
             }
