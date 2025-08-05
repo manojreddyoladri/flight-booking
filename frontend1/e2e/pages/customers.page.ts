@@ -22,28 +22,34 @@ export class CustomersPage extends BasePage {
    */
   async navigateToCustomers() {
     await this.navigateTo('/customers');
+    // Wait for the page to be fully loaded
+    await this.page.waitForLoadState('networkidle');
+    // Wait for the title to be visible
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
    * Verify page title
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toContainText('Customer Management');
+    // Wait for the title to be visible and contain the expected text
+    await expect(this.pageTitle).toBeVisible({ timeout: 15000 });
+    await expect(this.pageTitle).toContainText('Customer Management', { timeout: 15000 });
   }
 
   /**
    * Check if add customer form fields are visible
    */
   async verifyAddCustomerFormFields() {
-    await expect(this.nameInput).toBeVisible();
-    await expect(this.emailInput).toBeVisible();
+    await expect(this.nameInput).toBeVisible({ timeout: 10000 });
+    await expect(this.emailInput).toBeVisible({ timeout: 10000 });
   }
 
   /**
    * Check if search customer form is visible
    */
   async verifySearchCustomerForm() {
-    await expect(this.searchIdInput).toBeVisible();
+    await expect(this.searchIdInput).toBeVisible({ timeout: 10000 });
   }
 
   /**
