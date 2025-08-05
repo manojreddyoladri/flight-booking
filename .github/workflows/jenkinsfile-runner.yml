@@ -32,9 +32,9 @@ jobs:
 
       - name: Download Jenkinsfile Runner
         run: |
-          wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/v1.0-beta-32/jenkinsfile-runner-1.0-beta-32.jar
-          wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/v1.0-beta-32/plugins.txt
-          wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/v1.0-beta-32/jenkins.war
+          wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.zip
+          unzip jenkinsfile-runner-1.0-beta-32.zip
+          ls -la
 
       - name: Install dependencies
         run: |
