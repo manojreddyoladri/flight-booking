@@ -90,6 +90,10 @@ pipeline {
                     // Install Playwright browsers (free)
                     sh 'npx playwright install --with-deps'
                     
+                    // Start Angular development server
+                    sh 'npm start &'
+                    sh 'sleep 30'
+                    
                     // Run smoke tests (critical path only to save time/cost)
                     sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list'
                     
