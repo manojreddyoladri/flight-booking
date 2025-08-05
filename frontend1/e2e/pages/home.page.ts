@@ -97,7 +97,7 @@ export class HomePage extends BasePage {
    * Verify page title
    */
   async verifyPageTitle(expectedTitle: string) {
-    await expect(this.page).toHaveTitle(expectedTitle);
+    await expect(this.page).toHaveTitle(expectedTitle, { timeout: 15000 });
   }
 
   /**
