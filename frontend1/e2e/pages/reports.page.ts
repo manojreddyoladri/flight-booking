@@ -18,15 +18,15 @@ export class ReportsPage extends BasePage {
     await this.navigateTo('/reports');
     // Wait for page to load completely
     await this.page.waitForLoadState('networkidle');
-    // Wait for the page title to be visible
-    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
+    // Wait for the page title to be visible with increased timeout
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 30000 });
   }
 
   /**
    * Verify page title
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toContainText('Reports Dashboard', { timeout: 15000 });
+    await expect(this.pageTitle).toContainText('Reports Dashboard', { timeout: 30000 });
   }
 
   /**

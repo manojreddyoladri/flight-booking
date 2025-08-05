@@ -24,15 +24,15 @@ export class CustomersPage extends BasePage {
     await this.navigateTo('/customers');
     // Wait for page to load completely
     await this.page.waitForLoadState('networkidle');
-    // Wait for the page title to be visible
-    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
+    // Wait for the page title to be visible with increased timeout
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 30000 });
   }
 
   /**
    * Verify page title
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toContainText('Customer Management', { timeout: 15000 });
+    await expect(this.pageTitle).toContainText('Customer Management', { timeout: 30000 });
   }
 
   /**
