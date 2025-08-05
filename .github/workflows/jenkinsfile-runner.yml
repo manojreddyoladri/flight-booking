@@ -64,9 +64,9 @@ jobs:
 
       - name: Run Jenkinsfile Pipeline
         run: |
-          # Use java -cp to run the Jenkinsfile Runner as a library
-          java -cp "repo/io/jenkins/jenkinsfile-runner/jenkinsfile-runner/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.jar:lib/*" \
-            io.jenkins.jenkinsfile.runner.App \
+          # Use the correct main class and classpath for Jenkinsfile Runner
+          java -cp "lib/setup/setup.jar:lib/payload/payload.jar:repo/io/jenkins/jenkinsfile-runner/bootstrap/1.0-beta-32/bootstrap-1.0-beta-32.jar:repo/*" \
+            io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap \
             --jenkins-war jenkins.war \
             --jenkinsfile Jenkinsfile \
             --workspace . \
