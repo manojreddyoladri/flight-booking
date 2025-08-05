@@ -33,7 +33,7 @@ jobs:
       - name: Download Jenkinsfile Runner
         run: |
           wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.zip
-          unzip jenkinsfile-runner-1.0-beta-32.zip
+          unzip -o jenkinsfile-runner-1.0-beta-32.zip
           # Download required Jenkins files
           wget https://github.com/jenkinsci/jenkins/releases/download/jenkins-2.375.1/jenkins.war
           wget https://raw.githubusercontent.com/jenkinsci/jenkinsfile-runner/master/plugins.txt
