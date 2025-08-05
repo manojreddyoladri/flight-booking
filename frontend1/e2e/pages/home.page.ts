@@ -59,6 +59,8 @@ export class HomePage extends BasePage {
   async navigateToFlights() {
     await this.clickNavigationLink('Flights');
     await this.page.waitForURL('**/flights');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
   }
 
   /**
@@ -67,6 +69,8 @@ export class HomePage extends BasePage {
   async navigateToCustomers() {
     await this.clickNavigationLink('Customers');
     await this.page.waitForURL('**/customers');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
   }
 
   /**
@@ -75,6 +79,8 @@ export class HomePage extends BasePage {
   async navigateToBookings() {
     await this.clickNavigationLink('Bookings');
     await this.page.waitForURL('**/bookings');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
   }
 
   /**
@@ -83,6 +89,8 @@ export class HomePage extends BasePage {
   async navigateToReports() {
     await this.clickNavigationLink('Reports');
     await this.page.waitForURL('**/reports');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
   }
 
   /**

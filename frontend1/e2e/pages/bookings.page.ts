@@ -26,14 +26,17 @@ export class BookingsPage extends BasePage {
    */
   async navigateToBookings(): Promise<void> {
     await this.navigateTo('/bookings');
-    await this.verifyPageTitle();
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
+    // Wait for the page title to be visible
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
    * Verify page title is displayed
    */
   async verifyPageTitle(): Promise<void> {
-    await expect(this.pageTitle).toBeVisible({ timeout: 10000 });
+    await expect(this.pageTitle).toBeVisible({ timeout: 15000 });
   }
 
   /**

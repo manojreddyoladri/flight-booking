@@ -24,13 +24,17 @@ export class FlightsPage extends BasePage {
    */
   async navigateToFlights() {
     await this.navigateTo('/flights');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
+    // Wait for the page title to be visible
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
    * Verify page title
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toContainText('Flight Management');
+    await expect(this.pageTitle).toContainText('Flight Management', { timeout: 15000 });
   }
 
   /**

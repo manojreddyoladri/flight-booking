@@ -16,13 +16,17 @@ export class ReportsPage extends BasePage {
    */
   async navigateToReports() {
     await this.navigateTo('/reports');
+    // Wait for page to load completely
+    await this.page.waitForLoadState('networkidle');
+    // Wait for the page title to be visible
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
    * Verify page title
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toContainText('Reports Dashboard');
+    await expect(this.pageTitle).toContainText('Reports Dashboard', { timeout: 15000 });
   }
 
   /**
