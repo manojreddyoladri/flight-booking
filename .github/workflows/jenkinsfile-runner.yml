@@ -32,11 +32,24 @@ jobs:
 
       - name: Download Jenkinsfile Runner
         run: |
+          # Clean up any existing files
+          rm -rf bin lib repo jenkinsfile-runner-1.0-beta-32.zip jenkins.war plugins.txt
+
+          # Download Jenkinsfile Runner
           wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.zip
           unzip -o jenkinsfile-runner-1.0-beta-32.zip
+
           # Download required Jenkins files
           wget https://github.com/jenkinsci/jenkins/releases/download/jenkins-2.375.1/jenkins.war
-          wget https://raw.githubusercontent.com/jenkinsci/jenkinsfile-runner/master/plugins.txt
+          wget https://raw.githubusercontent.com/jenkinsci/jenkinsfile-runner/master/plugins.txt || echo "plugins.txt not found, creating minimal version"
+
+          # Create minimal plugins.txt if download fails
+          if [ ! -f plugins.txt ]; then
+            echo "pipeline:latest" > plugins.txt
+            echo "git:latest" >> plugins.txt
+            echo "workflow-aggregator:latest" >> plugins.txt
+          fi
+
           ls -la
 
       - name: Install dependencies
