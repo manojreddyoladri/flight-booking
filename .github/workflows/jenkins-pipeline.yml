@@ -51,9 +51,10 @@ jobs:
 
       - name: Run Jenkins Pipeline
         run: |
-          # Use the correct main class and classpath for Jenkinsfile Runner
-          java -cp "lib/setup/setup.jar:lib/payload/payload.jar:repo/io/jenkins/jenkinsfile-runner/bootstrap/1.0-beta-32/bootstrap-1.0-beta-32.jar:repo/*" \
-            io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap \
+          # Use the jenkinsfile-runner script that comes with the distribution
+          # This script handles all the classpath setup automatically
+          chmod +x bin/jenkinsfile-runner
+          ./bin/jenkinsfile-runner \
             --jenkins-war jenkins.war \
             --jenkinsfile Jenkinsfile \
             --workspace . \
