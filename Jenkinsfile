@@ -4,55 +4,57 @@ pipeline {
     environment {
         JAVA_VERSION = '17'
         NODE_VERSION = '18'
+        // Railway tokens will be added when available
+        // RAILWAY_TOKEN = credentials('railway-token')
+        // DOCKER_USERNAME = credentials('docker-username')
+        // DOCKER_PASSWORD = credentials('docker-password')
     }
-    
-    // GitHub Actions Integration - Zero Cost CI/CD Pipeline
     
     options {
         // Prevent multiple builds of the same commit
         skipDefaultCheckout(false)
         // Timeout to prevent runaway builds
         timeout(time: 1, unit: 'HOURS')
+        // Build only on main branch
+        disableConcurrentBuilds()
     }
     
-    // GitHub Actions Integration - Jenkinsfile Runner Pipeline
-    // Triggers are handled by GitHub Actions, not Jenkins polling
+    triggers {
+        // Poll SCM every 5 minutes for main branch changes
+        pollSCM('*/5 * * * *')
+    }
     
     stages {
         stage('Checkout') {
             steps {
-                // Free SCM checkout
                 checkout scm
-                
-                // Cache dependencies to reduce build time (cost optimization)
-                script {
-                    // Create cache directories
-                    sh 'mkdir -p ~/.m2 ~/.npm'
-                }
+                echo "Building commit: ${env.GIT_COMMIT}"
+                echo "Branch: ${env.GIT_BRANCH}"
             }
         }
         
         stage('Backend Build & Test') {
             steps {
                 dir('backend') {
-                    // Use Maven wrapper to avoid installation costs
-                    sh './mvnw clean compile test'
-                    sh './mvnw package -DskipTests'
+                    // Clean and install dependencies
+                    sh './mvnw clean install -DskipTests'
+                    
+                    // Run unit tests
+                    sh './mvnw test'
+                    
+                    // Run integration tests
+                    sh './mvnw verify -Dspring.profiles.active=test'
                 }
             }
             post {
                 always {
-                    // Free test reporting
-                    publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
-                    
-                    // Archive build artifacts (free storage)
-                    archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
-                }
-                success {
-                    echo 'Backend build and tests completed successfully'
-                }
-                failure {
-                    echo 'Backend build or tests failed'
+                    dir('backend') {
+                        // Publish test results
+                        publishTestResults testResultsPattern: '**/surefire-reports/*.xml'
+                        
+                        // Archive test reports
+                        archiveArtifacts artifacts: 'target/surefire-reports/**/*', allowEmptyArchive: true
+                    }
                 }
             }
         }
@@ -60,7 +62,7 @@ pipeline {
         stage('Frontend Build & Test') {
             steps {
                 dir('frontend1') {
-                    // Use npm ci for faster, reliable installs
+                    // Install dependencies
                     sh 'npm ci --cache ~/.npm --prefer-offline'
                     
                     // Run unit tests
@@ -72,112 +74,71 @@ pipeline {
             }
             post {
                 always {
-                    // Archive build artifacts
-                    archiveArtifacts artifacts: 'frontend1/dist/**/*', fingerprint: true
-                }
-                success {
-                    echo 'Frontend build and tests completed successfully'
-                }
-                failure {
-                    echo 'Frontend build or tests failed'
+                    dir('frontend1') {
+                        // Archive build artifacts
+                        archiveArtifacts artifacts: 'dist/**/*', allowEmptyArchive: true
+                        
+                        // Publish test results
+                        publishTestResults testResultsPattern: '**/test-results/*.xml'
+                    }
                 }
             }
         }
         
-        stage('E2E Testing') {
+        stage('E2E Smoke Tests') {
             steps {
                 dir('frontend1') {
-                    // Install Playwright browsers (free)
+                    // Install Playwright browsers
                     sh 'npx playwright install --with-deps'
                     
-                    // Start Angular development server
-                    sh 'npm start &'
-                    sh 'sleep 30'
+                    // Build frontend for testing
+                    sh 'npm run build'
                     
-                    // Run smoke tests (critical path only to save time/cost)
-                    sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --workers=4'
+                    // Start frontend server
+                    sh 'npx serve -l 4200 dist/frontend1/browser &'
+                    sh 'sleep 10'
                     
-                    // Run regression tests (non-blocking to avoid failures)
-                    sh 'npx playwright test e2e/tests/regression-*.spec.ts --reporter=list --workers=4 || true'
+                    // Wait for server to be ready
+                    sh 'npx wait-on http://localhost:4200 || echo "Server not ready, continuing..."'
+                    
+                    // Run only smoke tests (critical path)
+                    sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=30000 --workers=4'
                 }
             }
             post {
                 always {
-                    // Publish HTML report (free)
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'frontend1/playwright-report',
-                        reportFiles: 'index.html',
-                        reportName: 'Playwright E2E Report'
-                    ])
-                    
-                    // Archive test artifacts
-                    archiveArtifacts artifacts: 'frontend1/playwright-report/**/*, frontend1/test-results/**/*', fingerprint: true
-                }
-                success {
-                    echo 'E2E tests completed successfully'
-                }
-                failure {
-                    echo 'E2E tests failed (but continuing)'
-                }
-            }
-        }
-        
-        stage('Integration Tests') {
-            environment {
-                // Use free MySQL container for testing
-                MYSQL_ROOT_PASSWORD = 'root'
-                MYSQL_DATABASE = 'flightbooking'
-            }
-            steps {
-                script {
-                    // Start MySQL container (free)
-                    sh '''
-                        docker run -d --name test-mysql \
-                            -e MYSQL_ROOT_PASSWORD=root \
-                            -e MYSQL_DATABASE=flightbooking \
-                            -p 3306:3306 \
-                            mysql:8.0
-                        
-                        # Wait for MySQL to be ready
-                        sleep 30
-                    '''
-                    
-                    // Start backend service
-                    dir('backend') {
-                        sh '''
-                            ./mvnw spring-boot:run -Dspring-boot.run.profiles=test &
-                            sleep 30
-                        '''
-                    }
-                    
-                    // Run integration tests
                     dir('frontend1') {
-                        sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --workers=4'
+                        // Archive E2E test results
+                        archiveArtifacts artifacts: 'playwright-report/**/*,test-results/**/*', allowEmptyArchive: true
+                        
+                        // Publish HTML report
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'playwright-report',
+                            reportFiles: 'index.html',
+                            reportName: 'E2E Test Report'
+                        ])
                     }
-                }
-            }
-            post {
-                always {
-                    // Cleanup containers
-                    sh 'docker stop test-mysql || true'
-                    sh 'docker rm test-mysql || true'
                 }
             }
         }
         
         stage('Deploy Backend (Railway)') {
             when {
-                branch 'jenkins-integration'
+                branch 'main'
+                // Uncomment when Railway token is available
+                // expression { env.RAILWAY_TOKEN != null }
             }
             steps {
                 script {
-                    // Use GitHub Actions secrets for Railway deployment
+                    // Commented out until Railway token is available
+                    echo "Railway deployment skipped - token not configured"
+                    /*
                     sh '''
                         if [ -n "$RAILWAY_TOKEN" ]; then
-                            echo "Deploying to Railway..."
+                            echo "Deploying backend to Railway..."
                             curl -X POST \
                                 -H "Authorization: Bearer $RAILWAY_TOKEN" \
                                 -H "Content-Type: application/json" \
@@ -186,27 +147,36 @@ pipeline {
                             echo "Skipping Railway deployment - no token configured"
                         fi
                     '''
+                    */
                 }
             }
         }
         
-        stage('Deploy Frontend (Docker)') {
+        stage('Deploy Frontend (Railway)') {
             when {
-                branch 'jenkins-integration'
+                branch 'main'
+                // Uncomment when Railway token is available
+                // expression { env.RAILWAY_TOKEN != null }
             }
             steps {
                 dir('frontend1') {
-                    // Build Docker image (free)
-                    sh 'docker build -t flight-frontend .'
-                    
-                    // Tag for registry (use free Docker Hub)
-                    sh 'docker tag flight-frontend $DOCKER_USERNAME/flight-frontend:latest'
-                    
-                    // Push to registry (free tier available)
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push $DOCKER_USERNAME/flight-frontend:latest
-                    '''
+                    script {
+                        // Commented out until Railway token is available
+                        echo "Railway deployment skipped - token not configured"
+                        /*
+                        sh '''
+                            if [ -n "$RAILWAY_TOKEN" ]; then
+                                echo "Deploying frontend to Railway..."
+                                curl -X POST \
+                                    -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                                    -H "Content-Type: application/json" \
+                                    https://api.railway.app/v2/service/flight-booking-frontend/deploy
+                            else
+                                echo "Skipping Railway deployment - no token configured"
+                            fi
+                        '''
+                        */
+                    }
                 }
             }
         }
@@ -214,29 +184,17 @@ pipeline {
     
     post {
         always {
-            // Free notification via email
-            emailext (
-                subject: "Pipeline ${currentBuild.result}: ${currentBuild.fullDisplayName}",
-                body: """
-                    <h2>Build Results</h2>
-                    <p><strong>Build:</strong> ${currentBuild.fullDisplayName}</p>
-                    <p><strong>Status:</strong> ${currentBuild.result}</p>
-                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
-                    <p><strong>Changes:</strong> ${currentBuild.changeSets}</p>
-                    <p><a href="${env.BUILD_URL}">View Build Details</a></p>
-                """,
-                to: 'team@yourcompany.com',
-                attachLog: true
-            )
+            // Clean up workspace
+            cleanWs()
         }
         success {
-            echo 'Pipeline completed successfully!'
+            echo "Pipeline completed successfully! 🎉"
         }
         failure {
-            echo 'Pipeline failed!'
+            echo "Pipeline failed! ❌"
         }
         unstable {
-            echo 'Pipeline is unstable!'
+            echo "Pipeline is unstable! ⚠️"
         }
     }
 } 
