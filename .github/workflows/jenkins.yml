@@ -99,7 +99,7 @@ jobs:
           cd frontend1
           npm ci
 
-      - name: Install Playwright
+      - name: Install Playwright Browsers
         run: |
           cd frontend1
           npx playwright install --with-deps
@@ -147,6 +147,11 @@ jobs:
         run: |
           cd frontend1
           npm ci
+
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend1
+          npx playwright install --with-deps
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
