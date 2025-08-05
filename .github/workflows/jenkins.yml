@@ -113,15 +113,21 @@ jobs:
         run: |
           cd frontend1
           npx serve -l 4200 dist &
-          sleep 10
+          npx wait-on http://localhost:4200
 
       - name: Run E2E Tests
         run: |
           cd frontend1
-          # Run smoke tests
-          npx playwright test e2e/tests/smoke.spec.ts --reporter=list
+          # Check if server is running
+          curl -f http://localhost:4200 || echo "Server not ready, waiting..."
+          sleep 5
+          curl -f http://localhost:4200 || echo "Server still not ready"
+
+          # Run smoke tests with detailed output
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=60000
+
           # Run regression tests (non-blocking)
-          npx playwright test e2e/tests/regression-*.spec.ts --reporter=list || true
+          npx playwright test e2e/tests/regression-*.spec.ts --reporter=list --timeout=60000 || true
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4
@@ -173,7 +179,7 @@ jobs:
         run: |
           cd frontend1
           npx serve -l 4200 dist &
-          sleep 10
+          npx wait-on http://localhost:4200
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
