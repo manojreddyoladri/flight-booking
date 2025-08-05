@@ -112,7 +112,7 @@ jobs:
       - name: Start Frontend Server
         run: |
           cd frontend1
-          npx serve -l 4200 dist &
+          npx serve -l 4200 dist/frontend1/browser &
           npx wait-on http://localhost:4200
 
       - name: Run E2E Tests

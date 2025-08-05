@@ -34,6 +34,9 @@ jobs:
         run: |
           wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.zip
           unzip jenkinsfile-runner-1.0-beta-32.zip
+          # Download required Jenkins files
+          wget https://github.com/jenkinsci/jenkins/releases/download/jenkins-2.375.1/jenkins.war
+          wget https://raw.githubusercontent.com/jenkinsci/jenkinsfile-runner/master/plugins.txt
           ls -la
 
       - name: Install dependencies
@@ -48,7 +51,7 @@ jobs:
 
       - name: Run Jenkinsfile Pipeline
         run: |
-          java -jar jenkinsfile-runner-1.0-beta-32.jar \
+          java -jar repo/io/jenkins/jenkinsfile-runner/jenkinsfile-runner/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.jar \
             --jenkins-war jenkins.war \
             --jenkinsfile Jenkinsfile \
             --workspace . \
