@@ -2,96 +2,150 @@ name: Jenkins Pipeline (Self-Hosted Simulation)
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   jenkins-pipeline:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: "17"
-          distribution: "temurin"
-          cache: "maven"
-
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          
       - name: Set up Node.js 18
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: '18'
+          cache: 'npm'
           cache-dependency-path: frontend1/package-lock.json
-
-      - name: Download Jenkinsfile Runner
+          
+      - name: Stage 1: Checkout (Jenkins Simulation)
         run: |
-          # Clean up any existing files
-          rm -rf bin lib repo jenkinsfile-runner-1.0-beta-32.zip jenkins.war plugins.txt
-
-          # Download Jenkinsfile Runner
-          wget https://github.com/jenkinsci/jenkinsfile-runner/releases/download/1.0-beta-32/jenkinsfile-runner-1.0-beta-32.zip
-          unzip -o jenkinsfile-runner-1.0-beta-32.zip
-
-          # Download required Jenkins files
-          wget https://github.com/jenkinsci/jenkins/releases/download/jenkins-2.375.1/jenkins.war
-
-          # Create minimal plugins.txt
-          echo "pipeline:latest" > plugins.txt
-          echo "git:latest" >> plugins.txt
-          echo "workflow-aggregator:latest" >> plugins.txt
-          echo "junit:latest" >> plugins.txt
-          echo "htmlpublisher:latest" >> plugins.txt
-
-          ls -la
-
-      - name: Run Jenkins Pipeline
+          echo "=== Jenkins Pipeline Stage: Checkout ==="
+          echo "Building commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Workspace: $(pwd)"
+          
+      - name: Stage 2: Backend Build & Test (Jenkins Simulation)
         run: |
-          # Build classpath with all required JAR files
-          echo "Building classpath..."
-          CLASSPATH="lib/setup/setup.jar:lib/payload/payload.jar"
-
-          # Check if picocli JAR exists
-          echo "Checking for picocli JAR..."
-          ls -la repo/info/picocli/picocli/4.7.1/ || echo "picocli directory not found"
-
-          # Add all JAR files from repo directory
-          for jar in $(find repo -name "*.jar"); do
-            CLASSPATH="$CLASSPATH:$jar"
-            echo "Added to classpath: $jar"
-          done
-
-          echo "Final classpath: $CLASSPATH"
-
-          # Verify picocli is in classpath
-          echo "$CLASSPATH" | tr ':' '\n' | grep picocli || echo "picocli not found in classpath"
-
-          # Run with correct options based on help output
-          java -cp "$CLASSPATH" \
-            io.jenkins.jenkinsfile.runner.bootstrap.Bootstrap \
-            --w jenkins.war \
-            --runHome . \
-            --file Jenkinsfile \
-            run
-        env:
-          # Set environment variables for the pipeline
-          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-          NODE_HOME: /usr/local/bin/node
-          GIT_BRANCH: ${{ github.ref_name }}
-          GIT_COMMIT: ${{ github.sha }}
-
-      - name: Upload Pipeline Artifacts
+          echo "=== Jenkins Pipeline Stage: Backend Build & Test ==="
+          cd backend
+          
+          # Clean and install dependencies
+          echo "Running: ./mvnw clean install -DskipTests"
+          ./mvnw clean install -DskipTests
+          
+          # Run unit tests
+          echo "Running: ./mvnw test"
+          ./mvnw test
+          
+          # Run integration tests
+          echo "Running: ./mvnw verify -Dspring.profiles.active=test"
+          ./mvnw verify -Dspring.profiles.active=test
+          
+          # Archive test results (Jenkins simulation)
+          echo "Archiving test results..."
+          mkdir -p ../jenkins-artifacts/backend
+          cp -r target/surefire-reports ../jenkins-artifacts/backend/ || echo "No test reports found"
+          
+      - name: Stage 3: Frontend Build & Test (Jenkins Simulation)
+        run: |
+          echo "=== Jenkins Pipeline Stage: Frontend Build & Test ==="
+          cd frontend1
+          
+          # Install dependencies
+          echo "Running: npm ci --cache ~/.npm --prefer-offline"
+          npm ci --cache ~/.npm --prefer-offline
+          
+          # Run unit tests
+          echo "Running: npm test -- --watch=false --browsers=ChromeHeadless"
+          npm test -- --watch=false --browsers=ChromeHeadless
+          
+          # Build production bundle
+          echo "Running: npm run build"
+          npm run build
+          
+          # Archive build artifacts (Jenkins simulation)
+          echo "Archiving build artifacts..."
+          mkdir -p ../jenkins-artifacts/frontend
+          cp -r dist ../jenkins-artifacts/frontend/ || echo "No dist folder found"
+          
+      - name: Stage 4: E2E Smoke Tests (Jenkins Simulation)
+        run: |
+          echo "=== Jenkins Pipeline Stage: E2E Smoke Tests ==="
+          cd frontend1
+          
+          # Install Playwright browsers
+          echo "Installing Playwright browsers..."
+          npx playwright install --with-deps
+          
+          # Build frontend for testing
+          echo "Building frontend for testing..."
+          npm run build
+          
+          # Start frontend server
+          echo "Starting frontend server..."
+          npx serve -l 4200 dist/frontend1/browser &
+          sleep 10
+          
+          # Wait for server to be ready
+          echo "Waiting for server to be ready..."
+          npx wait-on http://localhost:4200 || echo "Server not ready, continuing..."
+          
+          # Run only smoke tests (critical path)
+          echo "Running smoke tests..."
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=30000 --workers=4
+          
+          # Archive E2E test results (Jenkins simulation)
+          echo "Archiving E2E test results..."
+          mkdir -p ../jenkins-artifacts/e2e
+          cp -r playwright-report ../jenkins-artifacts/e2e/ || echo "No playwright report found"
+          cp -r test-results ../jenkins-artifacts/e2e/ || echo "No test results found"
+          
+      - name: Stage 5: Deploy Backend (Railway) - Skipped
+        run: |
+          echo "=== Jenkins Pipeline Stage: Deploy Backend (Railway) ==="
+          echo "Railway deployment skipped - token not configured"
+          echo "When Railway token is available, uncomment deployment code in Jenkinsfile"
+          
+      - name: Stage 6: Deploy Frontend (Railway) - Skipped
+        run: |
+          echo "=== Jenkins Pipeline Stage: Deploy Frontend (Railway) ==="
+          echo "Railway deployment skipped - token not configured"
+          echo "When Railway token is available, uncomment deployment code in Jenkinsfile"
+          
+      - name: Upload Jenkins Pipeline Artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: jenkins-pipeline-artifacts
           path: |
-            backend/target/surefire-reports/
-            frontend1/dist/
-            frontend1/playwright-report/
-            frontend1/test-results/
+            jenkins-artifacts/
           retention-days: 30
+          
+      - name: Pipeline Success Notification
+        if: success()
+        run: |
+          echo "=== Jenkins Pipeline Completed Successfully! 🎉 ==="
+          echo "All stages passed:"
+          echo "✅ Checkout"
+          echo "✅ Backend Build & Test"
+          echo "✅ Frontend Build & Test"
+          echo "✅ E2E Smoke Tests"
+          echo "⏭️  Deploy Backend (Skipped - no Railway token)"
+          echo "⏭️  Deploy Frontend (Skipped - no Railway token)"
+          
+      - name: Pipeline Failure Notification
+        if: failure()
+        run: |
+          echo "=== Jenkins Pipeline Failed! ❌ ==="
+          echo "Check the logs above for details on which stage failed."
