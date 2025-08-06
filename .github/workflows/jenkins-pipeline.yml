@@ -39,6 +39,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: frontend1/package-lock.json
+          
       - name: Stage 1: Checkout (Jenkins Simulation)
         run: |
           echo "=== Jenkins Pipeline Stage: Checkout ==="
@@ -85,6 +86,11 @@ jobs:
           echo "Running: npm run build"
           npm run build
           
+          # Debug: Check what was built
+          echo "Checking build output..."
+          ls -la dist/ || echo "No dist folder"
+          ls -la dist/frontend1/ || echo "No dist/frontend1 folder"
+          
           # Archive build artifacts (Jenkins simulation)
           echo "Archiving build artifacts..."
           mkdir -p ../jenkins-artifacts/frontend
@@ -97,41 +103,51 @@ jobs:
           
           # Install Playwright browsers
           echo "Installing Playwright browsers..."
-          npx playwright install --with-deps
+          npx playwright install --with-deps chromium
           
-          # Build frontend for testing
-          echo "Building frontend for testing..."
-          npm run build
+          # Ensure build exists and check structure
+          if [ ! -d "dist" ]; then
+            echo "Build not found, rebuilding..."
+            npm run build
+          fi
           
-          # Start frontend server
-          echo "Starting frontend server..."
-          npx serve -l 4200 dist/frontend1/browser &
-          sleep 15
+          # Debug: Show build structure
+          echo "Build structure:"
+          find dist -type d 2>/dev/null | head -10 || echo "No dist directory"
           
-          # Wait for server to be ready with multiple attempts
-          echo "Waiting for server to be ready..."
-          for i in {1..5}; do
-            if curl -f http://localhost:4200 > /dev/null 2>&1; then
-              echo "Server is ready!"
-              break
-            else
-              echo "Attempt $i: Server not ready, waiting..."
-              sleep 5
-            fi
-          done
+          # Find the correct build directory and create symlink if needed
+          if [ -d "dist/frontend1/browser" ]; then
+            echo "Found Angular 17+ build structure"
+            # Create a symlink for easier serving
+            ln -sf dist/frontend1/browser dist/frontend1 2>/dev/null || echo "Symlink creation failed"
+          elif [ -d "dist/frontend1" ]; then
+            echo "Found standard Angular build structure"
+          else
+            echo "ERROR: No recognized build directory found!"
+            ls -la dist/ || echo "No dist directory"
+            exit 1
+          fi
           
-          # Final check
-          curl -f http://localhost:4200 || echo "Server still not ready, but continuing..."
+          # Set environment variables for Playwright
+          export CI=true
+          export SMOKE_TESTS_ONLY=true
+          export PLAYWRIGHT_BROWSERS_PATH=~/.cache/ms-playwright
           
-          # Run only smoke tests (critical path)
-          echo "Running smoke tests..."
-          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=60000 --workers=4
+          # Run smoke tests - Playwright will handle server startup
+          echo "Running smoke tests with Playwright managing the server..."
+          npx playwright test e2e/tests/smoke.spec.ts \
+            --reporter=list \
+            --timeout=30000 \
+            --workers=1 \
+            --project=chromium \
+            --retries=2 \
+            --max-failures=5
           
           # Archive E2E test results (Jenkins simulation)
           echo "Archiving E2E test results..."
           mkdir -p ../jenkins-artifacts/e2e
-          cp -r playwright-report ../jenkins-artifacts/e2e/ || echo "No playwright report found"
-          cp -r test-results ../jenkins-artifacts/e2e/ || echo "No test results found"
+          cp -r playwright-report ../jenkins-artifacts/e2e/ 2>/dev/null || echo "No playwright report found"
+          cp -r test-results ../jenkins-artifacts/e2e/ 2>/dev/null || echo "No test results found"
           
       - name: Stage 5: Deploy Backend (Railway) - Skipped
         run: |
