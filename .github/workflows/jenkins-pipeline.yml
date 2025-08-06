@@ -27,7 +27,6 @@ jobs:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: frontend1/package-lock.json
-          
       - name: Stage 1: Checkout (Jenkins Simulation)
         run: |
           echo "=== Jenkins Pipeline Stage: Checkout ==="
