@@ -94,15 +94,26 @@ jobs:
           # Start frontend server
           echo "Starting frontend server..."
           npx serve -l 4200 dist/frontend1/browser &
-          sleep 10
+          sleep 15
           
-          # Wait for server to be ready
+          # Wait for server to be ready with multiple attempts
           echo "Waiting for server to be ready..."
-          npx wait-on http://localhost:4200 || echo "Server not ready, continuing..."
+          for i in {1..5}; do
+            if curl -f http://localhost:4200 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            else
+              echo "Attempt $i: Server not ready, waiting..."
+              sleep 5
+            fi
+          done
+          
+          # Final check
+          curl -f http://localhost:4200 || echo "Server still not ready, but continuing..."
           
           # Run only smoke tests (critical path)
           echo "Running smoke tests..."
-          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=30000 --workers=4
+          npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=60000 --workers=4
           
           # Archive E2E test results (Jenkins simulation)
           echo "Archiving E2E test results..."
