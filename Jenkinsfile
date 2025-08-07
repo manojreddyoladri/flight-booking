@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY       = 'your.registry.io/your-namespace'
+        REGISTRY       = 'docker.io/wanderer1217'
         DOCKER_CRED_ID = 'docker-registry-creds'
     }
 
@@ -36,7 +36,9 @@ pipeline {
             post {
                 always {
                     dir('backend') {
-                        publishTestResults testResultsPattern: '**/surefire-reports/*.xml'
+                        // Publish JUnit test results
+                        junit '**/target/surefire-reports/*.xml'
+                        // Archive the raw XML & any other artifacts
                         archiveArtifacts artifacts: 'target/surefire-reports/**/*', allowEmptyArchive: true
                     }
                 }
@@ -55,7 +57,8 @@ pipeline {
                 always {
                     dir('frontend1') {
                         archiveArtifacts artifacts: 'dist/**/*', allowEmptyArchive: true
-                        publishTestResults testResultsPattern: '**/test-results/*.xml'
+                        // Publish any unit test XML results here
+                        junit '**/test-results/*.xml'
                     }
                 }
             }
