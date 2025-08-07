@@ -26,10 +26,11 @@ pipeline {
         }
 
         stage('Backend Build & Test') {
+            options { timeout(time: 10, unit: 'MINUTES') }
             steps {
                 dir('backend') {
                     // build and run tests in one go
-                    sh './mvnw clean test -Dspring.profiles.active=test'
+                    sh './mvnw clean test -B -X -Dspring.profiles.active=test'
                 }
             }
             post {
