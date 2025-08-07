@@ -30,7 +30,9 @@ pipeline {
             steps {
                 dir('backend') {
                     // build and run tests in one go
-                    sh './mvnw clean test -B -X -Dspring.profiles.active=test -DskipITs=true -Dtest="!*SmokeTest"''
+                    sh """
+                    ./mvnw clean test -B -Dspring.profiles.active=test -Dtest="!*SmokeTest" -DskipITs=true
+                    """                
                 }
             }
             post {
