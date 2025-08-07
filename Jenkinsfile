@@ -2,9 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Docker registry hostname/namespace
         REGISTRY       = 'your.registry.io/your-namespace'
-        // Credentials ID for your Docker registry in Jenkins
         DOCKER_CRED_ID = 'docker-registry-creds'
     }
 
@@ -81,19 +79,19 @@ pipeline {
         }
 
         stage('E2E Smoke Tests') {
-            agent {
-                dockerContainer {
-                    image 'mcr.microsoft.com/playwright:bionic'
-                    args  '--network=host'
-                }
-            }
+            agent any
             steps {
-                dir('frontend1') {
-                    sh 'npm ci'
-                    sh 'npm run build'
-                    sh 'npx http-server dist/frontend1/browser -p 4200 -a 0.0.0.0 &'
-                    sh 'npx wait-on http://localhost:4200'
-                    sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=30000 --workers=4'
+                script {
+                    docker.image('mcr.microsoft.com/playwright:bionic')
+                          .inside('--network=host') {
+                        dir('frontend1') {
+                            sh 'npm ci'
+                            sh 'npm run build'
+                            sh 'npx http-server dist/frontend1/browser -p 4200 -a 0.0.0.0 &'
+                            sh 'npx wait-on http://localhost:4200'
+                            sh 'npx playwright test e2e/tests/smoke.spec.ts --reporter=list --timeout=30000 --workers=4'
+                        }
+                    }
                 }
             }
             post {
