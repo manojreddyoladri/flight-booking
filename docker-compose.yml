@@ -11,7 +11,7 @@ services:
       MYSQL_USER: flightuser
       MYSQL_PASSWORD: flightpass
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -63,5 +63,18 @@ services:
       retries: 3
       start_period: 40s
 
+  # Jenkins Master
+  jenkins-server:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-server
+    user: root                             # so Jenkins can talk to the socket
+    ports:
+      - "8085:8080"                        # Jenkins UI
+      - "50000:50000"                      # Jenkins agent port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # mount host’s Docker socket
+      - jenkins_home:/var/jenkins_home             # persist Jenkins data
+
 volumes:
   mysql_data: 
+  jenkins_home:
