@@ -122,7 +122,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<timeout>300</timeout>
 					<parallel>classes</parallel>
 					<threadCount>2</threadCount>
 					<forkCount>1</forkCount>

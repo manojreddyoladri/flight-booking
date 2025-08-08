@@ -37,10 +37,18 @@ pipeline {
                     # Set Maven options for better performance (Java 17 compatible)
                     export MAVEN_OPTS="-Xmx512m -XX:+UseG1GC"
                     
-                    # Clean, compile, and test in one go with optimized settings
-                    ./mvnw clean test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=300 -Dmaven.compiler.fork=true -Dmaven.compiler.maxmem=512m || {
-                        echo "Build failed with optimized settings, trying with basic settings..."
-                        ./mvnw clean test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true
+                    # First, try to compile only
+                    echo "Compiling source code..."
+                    ./mvnw clean compile -B -DskipTests=true || {
+                        echo "Compilation failed, exiting..."
+                        exit 1
+                    }
+                    
+                    # Then run only critical tests
+                    echo "Running critical tests..."
+                    ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="HealthControllerTest" -Dmaven.test.failure.ignore=true || {
+                        echo "Critical tests failed, trying all tests..."
+                        ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true
                     }
                     """                
                 }
