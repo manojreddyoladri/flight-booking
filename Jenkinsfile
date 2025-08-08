@@ -63,9 +63,12 @@ pipeline {
                 dir('frontend1') {
                     sh """
                     echo "=== Starting Frontend Build & Test ==="
-                    npm ci --silent
-                    npm run build --silent
-                    npm run test --silent --watch=false
+                    # Use Docker to run npm commands in a Node.js container
+                    docker run --rm -v \${WORKSPACE}/frontend1:/app -w /app node:18-alpine sh -c "
+                        npm ci --silent &&
+                        npm run build --silent &&
+                        npm run test --silent --watch=false
+                    "
                     """
                 }
             }
@@ -103,7 +106,12 @@ pipeline {
                 dir('frontend1') {
                     sh """
                     echo "=== Running E2E Smoke Tests ==="
-                    npx playwright test --config=playwright.config.ts --grep="smoke" --reporter=line
+                    # Use Docker to run Playwright tests in a Node.js container
+                    docker run --rm -v \${WORKSPACE}/frontend1:/app -w /app --network=host mcr.microsoft.com/playwright:v1.40.0-focal sh -c "
+                        npm ci --silent &&
+                        npx playwright install --with-deps &&
+                        npx playwright test --config=playwright.config.ts --grep='smoke' --reporter=line
+                    "
                     """
                 }
             }

@@ -1,0 +1,17 @@
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+# Install Node.js and npm
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@10.8.2 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Verify installations
+RUN node --version && npm --version
+
+USER jenkins 
