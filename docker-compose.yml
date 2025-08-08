@@ -72,8 +72,18 @@ services:
       - "8085:8080"                        # Jenkins UI
       - "50000:50000"                      # Jenkins agent port
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # mount host’s Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock   # mount host's Docker socket
       - jenkins_home:/var/jenkins_home             # persist Jenkins data
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - JAVA_OPTS=-Xmx2g -Xms1g -XX:MaxPermSize=512m -XX:+UseG1GC
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   mysql_data: 
