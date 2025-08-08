@@ -34,8 +34,8 @@ pipeline {
                     echo "=== Starting Backend Build & Test ==="
                     echo "Building and testing with optimized settings..."
                     
-                    # Set Maven options for better performance
-                    export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m"
+                    # Set Maven options for better performance (Java 17 compatible)
+                    export MAVEN_OPTS="-Xmx512m -XX:+UseG1GC"
                     
                     # Clean, compile, and test in one go with optimized settings
                     ./mvnw clean test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=300 -Dmaven.compiler.fork=true -Dmaven.compiler.maxmem=512m || {
