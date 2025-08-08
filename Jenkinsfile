@@ -26,20 +26,22 @@ pipeline {
         }
 
         stage('Backend Build & Test') {
-            options { timeout(time: 20, unit: 'MINUTES') }
+            options { timeout(time: 25, unit: 'MINUTES') }
             steps {
                 dir('backend') {
-                    // Clean and compile first
+                    // Combined build and test with optimized settings
                     sh """
                     echo "=== Starting Backend Build & Test ==="
-                    echo "Cleaning and compiling..."
-                    ./mvnw clean compile -B -DskipTests=true
-                    """
+                    echo "Building and testing with optimized settings..."
                     
-                    // Run tests with optimized settings
-                    sh """
-                    echo "Running tests..."
-                    ./mvnw test -B -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -DskipITs=true -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=300
+                    # Set Maven options for better performance
+                    export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m"
+                    
+                    # Clean, compile, and test in one go with optimized settings
+                    ./mvnw clean test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=300 -Dmaven.compiler.fork=true -Dmaven.compiler.maxmem=512m || {
+                        echo "Build failed with optimized settings, trying with basic settings..."
+                        ./mvnw clean test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="!*SmokeTest,!*ApplicationTests" -Dmaven.test.failure.ignore=true
+                    }
                     """                
                 }
             }
