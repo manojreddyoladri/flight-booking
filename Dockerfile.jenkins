@@ -2,16 +2,29 @@ FROM jenkins/jenkins:lts-jdk17
 
 USER root
 
-# Install Node.js and npm
+# Install Docker CLI for ARM64
 RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@10.8.2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Verify installations
-RUN node --version && npm --version
+RUN docker --version && node --version && npm --version
 
 USER jenkins 
