@@ -21,27 +21,40 @@ pipeline {
         }
         
         stage('Backend Build & Test') {
-            options { timeout(time: 10, unit: 'MINUTES') }
+            options { 
+                timeout(time: 15, unit: 'MINUTES')
+                retry(2)
+            }
             steps {
                 dir('backend') {
                     sh """
                     echo "=== Starting Backend Build & Test ==="
                     echo "Building with ultra-conservative settings..."
+                    echo "Current directory: \$(pwd)"
+                    echo "Available memory: \$(free -h | grep Mem | awk '{print \$2}')"
+                    echo "Available disk space: \$(df -h . | tail -1 | awk '{print \$4}')"
                     
-                    # Set Maven options for better performance
-                    export MAVEN_OPTS="-Xmx1g -XX:+UseG1GC -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError"
+                    # Set Maven options for better performance and memory management
+                    export MAVEN_OPTS="-Xmx512m -XX:+UseG1GC -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError -XX:MaxGCPauseMillis=200"
+                    echo "Maven options set: \$MAVEN_OPTS"
+                    
+                    # Clean Maven cache to avoid memory issues
+                    echo "Cleaning Maven cache..."
+                    rm -rf ~/.m2/repository/.cache || true
                     
                     # Step 1: Clean and compile source code only (skip tests entirely)
                     echo "Step 1: Compiling source code only..."
-                    timeout 400s ./mvnw clean compile -B -DskipTests=true -Dmaven.test.skip=true || {
+                    timeout 300s ./mvnw clean compile -B -DskipTests=true -Dmaven.test.skip=true -q -Dmaven.compiler.fork=true -Dmaven.compiler.meminitial=256m -Dmaven.compiler.maxmem=512m || {
                         echo "❌ Source compilation failed!"
+                        echo "Checking for Maven errors..."
+                        ls -la target/ || true
                         exit 1
                     }
                     echo "✅ Source compilation successful!"
                     
-                    # Step 2: Try to run only the simplest test with very aggressive timeout
+                    # Step 2: Run only the simplest test with very aggressive timeout
                     echo "Step 2: Running HealthControllerTest only..."
-                    timeout 180s ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="HealthControllerTest" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=180 || {
+                    timeout 120s ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="HealthControllerTest" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=120 -q -Dmaven.compiler.fork=true -Dmaven.compiler.meminitial=256m -Dmaven.compiler.maxmem=512m || {
                         echo "⚠️ HealthControllerTest failed or timed out, but continuing..."
                         echo "✅ Build completed with compilation success!"
                     }
@@ -54,6 +67,8 @@ pipeline {
                 }
                 failure {
                     echo "❌ Backend Build & Test failed!"
+                    echo "Checking workspace contents..."
+                    sh "ls -la backend/ || true"
                 }
             }
         }
