@@ -61,7 +61,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Jenkins Master
+  # Jenkins Master (Multi-Project)
   jenkins-server:
     image: jenkins/jenkins:lts-jdk17
     container_name: jenkins-server
@@ -72,6 +72,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # mount host's Docker socket
       - jenkins_home:/var/jenkins_home             # persist Jenkins data
+      - /var/jenkins_home/workspace:/var/jenkins_home/workspace  # shared workspace
     environment:
       - JENKINS_OPTS=--httpPort=8080
       - JAVA_OPTS=-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -XX:+HeapDumpOnOutOfMemoryError -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError
