@@ -10,11 +10,6 @@ target/
 node_modules/
 dist/
 
-# Deployment documentation (keep local only)
-DEPLOYMENT.md
-FREE-DEPLOYMENT.md
-setup-free-deployment.sh
-
 # Test artifacts and reports
 test-results/
 playwright-report/
