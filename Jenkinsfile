@@ -7,7 +7,7 @@ pipeline {
     }
     
     environment {
-        MAVEN_OPTS = '-Xmx512m -XX:+UseG1GC -XX:+DisableExplicitGC'
+        MAVEN_OPTS = '-Xmx1g -XX:+UseG1GC -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError'
     }
     
     stages {
@@ -20,7 +20,7 @@ pipeline {
         }
         
         stage('Backend Build & Test') {
-            options { timeout(time: 8, unit: 'MINUTES') }
+            options { timeout(time: 10, unit: 'MINUTES') }
             steps {
                 dir('backend') {
                     sh """
@@ -28,11 +28,11 @@ pipeline {
                     echo "Building with ultra-conservative settings..."
                     
                     # Set Maven options for better performance
-                    export MAVEN_OPTS="-Xmx512m -XX:+UseG1GC -XX:+DisableExplicitGC"
+                    export MAVEN_OPTS="-Xmx1g -XX:+UseG1GC -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError"
                     
                     # Step 1: Clean and compile source code only (skip tests entirely)
                     echo "Step 1: Compiling source code only..."
-                    timeout 300s ./mvnw clean compile -B -DskipTests=true -Dmaven.test.skip=true || {
+                    timeout 400s ./mvnw clean compile -B -DskipTests=true -Dmaven.test.skip=true || {
                         echo "❌ Source compilation failed!"
                         exit 1
                     }
@@ -40,7 +40,7 @@ pipeline {
                     
                     # Step 2: Try to run only the simplest test with very aggressive timeout
                     echo "Step 2: Running HealthControllerTest only..."
-                    timeout 120s ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="HealthControllerTest" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=120 || {
+                    timeout 180s ./mvnw test -B -DskipITs=true -Dspring.profiles.active=test -Dtest="HealthControllerTest" -Dmaven.test.failure.ignore=true -Dmaven.test.timeout=180 || {
                         echo "⚠️ HealthControllerTest failed or timed out, but continuing..."
                         echo "✅ Build completed with compilation success!"
                     }

@@ -74,13 +74,13 @@ services:
       - jenkins_home:/var/jenkins_home             # persist Jenkins data
     environment:
       - JENKINS_OPTS=--httpPort=8080
-      - JAVA_OPTS=-Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -XX:+HeapDumpOnOutOfMemoryError -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC
+      - JAVA_OPTS=-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -XX:+HeapDumpOnOutOfMemoryError -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC -XX:+ExitOnOutOfMemoryError
       - JENKINS_UC=https://updates.jenkins.io
       - JENKINS_UC_DOWNLOAD=https://updates.jenkins.io/download
     restart: unless-stopped
-    mem_limit: 1.5g
-    mem_reservation: 512m
-    cpus: 1.0
+    mem_limit: 3g
+    mem_reservation: 1g
+    cpus: 1.5
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
       interval: 30s
