@@ -35,10 +35,10 @@ case "$1" in
     "status")
         echo "Checking Jenkins status..."
         if docker-compose -f $COMPOSE_FILE ps $JENKINS_SERVICE | grep -q "Up"; then
-            echo "✅ Jenkins is running"
+            echo "Jenkins is running"
             echo "Access at http://localhost:8085"
         else
-            echo "❌ Jenkins is not running"
+            echo "Jenkins is not running"
             echo "Run './jenkins-manager.sh start' to start it"
         fi
         ;;

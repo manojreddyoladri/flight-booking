@@ -45,9 +45,9 @@ pipeline {
                     # Step 1: Check if Maven wrapper exists and is executable
                     echo "Step 1: Checking Maven wrapper..."
                     if [ -f "./mvnw" ] && [ -x "./mvnw" ]; then
-                        echo "✅ Maven wrapper found and executable"
+                        echo "Maven wrapper found and executable"
                     else
-                        echo "❌ Maven wrapper not found or not executable"
+                        echo "Maven wrapper not found or not executable"
                         echo "Creating dummy build success..."
                         mkdir -p target/classes
                         echo "Dummy build completed" > target/classes/build-success.txt
@@ -57,22 +57,22 @@ pipeline {
                     # Step 2: Try a minimal compilation check
                     echo "Step 2: Running minimal compilation check..."
                     timeout 60s ./mvnw --version -q || {
-                        echo "⚠️ Maven version check failed, but continuing..."
+                        echo "Maven version check failed, but continuing..."
                         echo "Creating dummy build success..."
                         mkdir -p target/classes
                         echo "Dummy build completed" > target/classes/build-success.txt
                     }
                     
-                    echo "✅ Backend build check completed!"
+                    echo "Backend build check completed!"
                     """                
                 }
             }
             post {
                 success {
-                    echo "✅ Backend Build & Test completed successfully!"
+                    echo "Backend Build & Test completed successfully!"
                 }
                 failure {
-                    echo "❌ Backend Build & Test failed!"
+                    echo "Backend Build & Test failed!"
                     echo "Checking workspace contents..."
                     sh "ls -la backend/ || true"
                 }
@@ -89,34 +89,34 @@ pipeline {
                     # Install dependencies
                     echo "Installing dependencies..."
                     npm ci --silent || {
-                        echo "❌ Dependency installation failed!"
+                        echo "Dependency installation failed!"
                         exit 1
                     }
-                    echo "✅ Dependencies installed successfully!"
+                    echo "Dependencies installed successfully!"
                     
                     # Build the application
                     echo "Building Angular application..."
                     npm run build --silent || {
-                        echo "❌ Frontend build failed!"
+                        echo "Frontend build failed!"
                         exit 1
                     }
-                    echo "✅ Frontend build completed successfully!"
+                    echo "Frontend build completed successfully!"
                     
                     # Run unit tests
                     echo "Running unit tests..."
                     npm run test --silent --watch=false || {
-                        echo "⚠️ Unit tests failed, but continuing..."
+                        echo "Unit tests failed, but continuing..."
                     }
-                    echo "✅ Frontend tests completed!"
+                    echo "Frontend tests completed!"
                     """
                 }
             }
             post {
                 success {
-                    echo "✅ Frontend Build & Test completed successfully!"
+                    echo "Frontend Build & Test completed successfully!"
                 }
                 failure {
-                    echo "❌ Frontend Build & Test failed!"
+                    echo "Frontend Build & Test failed!"
                 }
             }
         }
@@ -130,33 +130,33 @@ pipeline {
                 # Build backend image
                 echo "Building backend Docker image..."
                 docker build -t flight-booking-backend:latest ./backend || {
-                    echo "❌ Backend image build failed!"
+                    echo "Backend image build failed!"
                     exit 1
                 }
-                echo "✅ Backend image built successfully!"
+                echo "Backend image built successfully!"
                 
                 # Build frontend image
                 echo "Building frontend Docker image..."
                 docker build -t flight-booking-frontend:latest ./frontend1 || {
-                    echo "❌ Frontend image build failed!"
+                    echo "Frontend image build failed!"
                     exit 1
                 }
-                echo "✅ Frontend image built successfully!"
+                echo "Frontend image built successfully!"
                 
                 # Tag images for registry (if needed)
                 echo "Tagging images..."
                 docker tag flight-booking-backend:latest localhost:5000/flight-booking-backend:latest || true
                 docker tag flight-booking-frontend:latest localhost:5000/flight-booking-frontend:latest || true
                 
-                echo "✅ Docker images built and tagged successfully!"
+                echo "Docker images built and tagged successfully!"
                 """
             }
             post {
                 success {
-                    echo "✅ Docker images built successfully!"
+                    echo "Docker images built successfully!"
                 }
                 failure {
-                    echo "❌ Docker image build failed!"
+                    echo "Docker image build failed!"
                 }
             }
         }
@@ -171,18 +171,18 @@ pipeline {
                     # Install Playwright browsers if not already installed
                     echo "Installing Playwright browsers..."
                     npx playwright install --with-deps chromium || {
-                        echo "❌ Playwright browser installation failed!"
+                        echo "Playwright browser installation failed!"
                         exit 1
                     }
-                    echo "✅ Playwright browsers installed!"
+                    echo "Playwright browsers installed!"
                     
                     # Build the application
                     echo "Building Angular application for E2E testing..."
                     npm run build --silent || {
-                        echo "❌ Frontend build failed for E2E testing!"
+                        echo "Frontend build failed for E2E testing!"
                         exit 1
                     }
-                    echo "✅ Frontend build completed!"
+                    echo "Frontend build completed!"
                     
                     # Start the built application using serve
                     echo "Starting development server for E2E testing..."
@@ -193,7 +193,7 @@ pipeline {
                     echo "Waiting for server to be ready..."
                     for i in {1..30}; do
                         if curl -f http://localhost:4200 > /dev/null 2>&1; then
-                            echo "✅ Server is ready!"
+                            echo "Server is ready!"
                             break
                         fi
                         echo "Waiting for server... (attempt \$i/30)"
@@ -202,7 +202,7 @@ pipeline {
                     
                     # Check if server is running
                     if ! curl -f http://localhost:4200 > /dev/null 2>&1; then
-                        echo "❌ Server failed to start!"
+                        echo "Server failed to start!"
                         cat serve.log
                         kill \$SERVE_PID 2>/dev/null || true
                         exit 1
@@ -213,7 +213,7 @@ pipeline {
                     export CI=true
                     export SMOKE_TESTS_ONLY=true
                     timeout 300s npx playwright test --config=playwright.config.ts --grep="smoke" --reporter=line --project=chromium --reuse-existing-server || {
-                        echo "⚠️ Smoke tests failed, but continuing..."
+                        echo "Smoke tests failed, but continuing..."
                         # Don't exit on test failure, just log it
                     }
                     
@@ -222,16 +222,16 @@ pipeline {
                     kill \$SERVE_PID 2>/dev/null || true
                     wait \$SERVE_PID 2>/dev/null || true
                     
-                    echo "✅ E2E Smoke Tests completed!"
+                    echo "E2E Smoke Tests completed!"
                     """
                 }
             }
             post {
                 success {
-                    echo "✅ E2E Smoke Tests completed successfully!"
+                    echo "E2E Smoke Tests completed successfully!"
                 }
                 failure {
-                    echo "❌ E2E Smoke Tests failed!"
+                    echo "E2E Smoke Tests failed!"
                 }
                 always {
                     dir('frontend1') {
@@ -251,22 +251,22 @@ pipeline {
                 # Stop existing containers if running
                 echo "Stopping existing containers..."
                 docker-compose -f ${DOCKER_COMPOSE_FILE} down --remove-orphans || true
-                echo "✅ Existing containers stopped!"
+                echo "Existing containers stopped!"
                 
                 # Clean up any dangling images
                 echo "Cleaning up dangling images..."
                 docker image prune -f || true
-                echo "✅ Cleanup completed!"
+                echo "Cleanup completed!"
                 
                 # Start the application stack
                 echo "Starting application stack..."
                 docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build || {
-                    echo "❌ Deployment failed!"
+                    echo "Deployment failed!"
                     echo "Checking docker-compose logs..."
                     docker-compose -f ${DOCKER_COMPOSE_FILE} logs --tail=50
                     exit 1
                 }
-                echo "✅ Application stack started!"
+                echo "Application stack started!"
                 
                 # Wait for services to be healthy
                 echo "Waiting for services to be healthy..."
@@ -277,14 +277,14 @@ pipeline {
                         echo "Healthy services: \$HEALTHY_COUNT/\$TOTAL_SERVICES"
                         
                         if [ "\$HEALTHY_COUNT" -ge "\$TOTAL_SERVICES" ] && [ "\$TOTAL_SERVICES" -gt 0 ]; then
-                            echo "✅ All services are healthy!"
+                            echo "All services are healthy!"
                             break
                         fi
                         
                         sleep 10
                     done
                 ' || {
-                    echo "⚠️ Services may not be fully healthy, but continuing..."
+                    echo "Services may not be fully healthy, but continuing..."
                 }
                 
                 # Verify deployment
@@ -294,32 +294,32 @@ pipeline {
                 # Check backend health
                 echo "Checking backend health..."
                 if curl -f http://localhost:8080/api/health; then
-                    echo "✅ Backend is healthy!"
+                    echo "Backend is healthy!"
                 else
-                    echo "⚠️ Backend health check failed, but continuing..."
+                    echo "Backend health check failed, but continuing..."
                 fi
                 
                 # Check frontend health
                 echo "Checking frontend health..."
                 if curl -f http://localhost:80; then
-                    echo "✅ Frontend is healthy!"
+                    echo "Frontend is healthy!"
                 else
-                    echo "⚠️ Frontend health check failed, but continuing..."
+                    echo "Frontend health check failed, but continuing..."
                 fi
                 
-                echo "✅ Deployment completed successfully!"
+                echo "Deployment completed successfully!"
                 """
             }
             post {
                 success {
-                    echo "✅ Deployment completed successfully!"
-                    echo "🎉 Application is now running at:"
+                    echo "Deployment completed successfully!"
+                    echo "Application is now running at:"
                     echo "   Frontend: http://localhost:80"
                     echo "   Backend:  http://localhost:8080"
                     echo "   Jenkins:  http://localhost:8085"
                 }
                 failure {
-                    echo "❌ Deployment failed!"
+                    echo "Deployment failed!"
                     echo "Checking docker-compose status..."
                     sh "docker-compose -f ${DOCKER_COMPOSE_FILE} ps"
                 }
@@ -332,10 +332,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "🎉 Pipeline completed successfully!"
+            echo "Pipeline completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed!"
+            echo "Pipeline failed!"
         }
     }
 }
